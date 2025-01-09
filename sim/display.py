@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 class Display(object):
-    def __init__(self, W=400, H=400):
+    def __init__(self, W, H):
         pygame.init()
         self.screen = pygame.display.set_mode((W,H))
         self.surface = pygame.Surface(self.screen.get_size()).convert()
@@ -23,7 +23,7 @@ class Display(object):
             time.sleep(t)
     
     def __blit_surface__(self, img):
-        pygame.surfarray.blit_array(self.surface, img)
+        pygame.surfarray.blit_array(self.surface, img.swapaxes(0,1))
         self.screen.blit(self.surface, (0,0))
 
         pygame.display.flip()

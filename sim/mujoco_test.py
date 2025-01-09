@@ -1,4 +1,4 @@
-#!/Users/nathan/imperial/fourth_year/fyp/split_brain/bin/python3
+#!/Users/nathan/imperial/fourth_year/fyp/venv/bin/python3
 import mujoco
 import os
 import subprocess
@@ -12,18 +12,10 @@ import numpy as np
 from display import Display
 import matplotlib.pyplot as plt
 
-# img = np.random.rand(400,400, 3)*255
-# display = Display()
-# display.show_img(img)
-# time.sleep(1)
-# img = np.random.rand(400,400, 3)*255
-# display.show_img(img)
-# time.sleep(1)
-# display.handle_close()
-
 xml = """
 <mujoco>
   <worldbody>
+    <camera name="view"/>
     <light name="top" pos="0 0 1"/>
     <body name="box_and_sphere" euler="0 0 -30">
       <joint name="swing" type="hinge" axis="1 -1 0" pos="-.2 -.2 -.2"/>
@@ -54,8 +46,8 @@ with mujoco.Renderer(model) as renderer:
       pixels = renderer.render()
       frames.append(pixels)
 
-W = len(frames[0])
-H = len(frames[0][0])
+W = len(frames[0][0])
+H = len(frames[0])
 display = Display(W, H)
 
 display.show_video(frames, fps=framerate)
