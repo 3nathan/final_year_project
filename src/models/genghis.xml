@@ -1,0 +1,105 @@
+<mujoco model="genghis">
+    <default>
+        <joint type="hinge"/>
+    </default>
+
+    <worldbody>
+        <light name="top" pos="0 0 4"/>
+        <camera name="plan" pos="0 0 40" quat="1 0 0 0" fovy="10"/>
+        <camera name="zoom_plan" pos="0 0 40" quat="1 0 0 0" fovy="3"/>
+        <camera name="side" pos="0 0 0" quat="1 0 0 0"/>
+
+
+        <!-- <body name="pit"> -->
+        <!--     <geom name="ground" type="plane" size="3 3 3" rgba="0.00 0.91 0.14 1"/> -->
+        <!--     <body name="walls"> -->
+        <!--         <geom name="north_wall" type="box" pos="0 3 0" size="3.1 0.1 0.4" rgba="0.2 0.2 0.2 1"/> -->
+        <!--         <geom name="east_wall" type="box" pos="3 0 0" size="0.1 3.1 0.4" rgba="0.2 0.2 0.2 1"/> -->
+        <!--         <geom name="south_wall" type="box" pos="0 -3 0" size="3.1 0.1 0.4" rgba="0.2 0.2 0.2 1"/> -->
+        <!--         <geom name="west_wall" type="box" pos="-3 0 0" size="0.1 3.1 0.4" rgba="0.2 0.2 0.2 1"/> -->
+        <!--     </body> -->
+        <!-- </body> -->
+
+        <body name="plain">
+            <geom name="ground" type="plane" size="12 12 12" rgba="0.00 0.91 0.14 1"/>
+        </body>
+
+        <body name="genghis" pos="0 0 0.1">
+            <freejoint/>
+            <!-- <joint axis="-1 0 0" pos="-0.1 -0.1 -0.1"/> -->
+            <geom type="box" size="0.12 0.35 0.1" rgba="1 0 0 1"/>
+
+            <!-- Leg 1 (front right) -->
+            <body name="leg1_base" pos="0.12 0.35 0">
+                <joint name="leg1_pitch" axis="0 -1 0" limited="true" range="-90 -20"/>
+                <joint name="leg1_yaw" axis="0 0 1" limited="true" range="-45 45"/>
+                <geom name="ball1" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+
+                <body name="leg1" pos="0.12 0 0">
+                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                </body>
+            </body>
+
+            <!-- Leg 2 (middle right) -->
+            <body name="leg2_base" pos="0.12 0 0">
+                <joint name="leg2_pitch" axis="0 -1 0" limited="true" range="-90 -20"/>
+                <joint name="leg2_yaw" axis="0 0 1" limited="true" range="-45 45"/>
+                <geom name="ball2" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+
+                <body name="leg2" pos="0.12 0 0">
+                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                </body>
+            </body>
+
+            <!-- Leg 3 (rear right) -->
+            <body name="leg3_base" pos="0.12 -0.35 0">
+                <joint name="leg3_pitch" axis="0 -1 0" limited="true" range="-90 -20"/>
+                <joint name="leg3_yaw" axis="0 0 1" limited="true" range="-45 45"/>
+                <geom name="ball3" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+
+                <body name="leg3" pos="0.12 0 0">
+                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                </body>
+            </body>
+
+            <!-- Leg 4 (front left) -->
+            <body name="leg4_base" pos="-0.12 0.35 0">
+                <joint name="leg4_pitch" axis="0 1 0" limited="true" range="-90 -20"/>
+                <joint name="leg4_yaw" axis="0 0 1" limited="true" range="-45 45"/>
+                <geom name="ball4" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+
+                <body name="leg4" pos="-0.12 0 0">
+                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                </body>
+            </body>
+
+            <!-- Leg 5 (middle left) -->
+            <body name="leg5_base" pos="-0.12 0 0">
+                <joint name="leg5_pitch" axis="0 1 0" limited="true" range="-90 -20"/>
+                <joint name="leg5_yaw" axis="0 0 1" limited="true" range="-45 45"/>
+                <geom name="ball5" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+
+                <body name="leg5" pos="-0.12 0 0">
+                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                </body>
+            </body>
+                
+            <!-- Leg 6 (rear left) -->
+            <body name="leg6_base" pos="-0.12 -0.35 0">
+                <joint name="leg6_pitch" axis="0 1 0" limited="true" range="-90 -20"/>
+                <joint name="leg6_yaw" axis="0 0 1" limited="true" range="-45 45"/>
+                <geom name="ball6" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+
+                <body name="leg6" pos="-0.12 0 0">
+                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                </body>
+            </body>
+
+        </body>
+
+
+<!--         <body name="food" pos="1.2 -0.7 0.1"> -->
+<!--             <geom type="sphere" pos="1.2 -0.7 0.1" size="0.1" rgba="1.5 1.3 0 1" solimp="0 0 0" solref="0 0"/> -->
+<!--         </body> -->
+    </worldbody>
+</mujoco>

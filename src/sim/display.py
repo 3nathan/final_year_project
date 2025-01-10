@@ -6,6 +6,7 @@ class Display(object):
     def __init__(self, W, H):
         pygame.init()
         self.screen = pygame.display.set_mode((W,H))
+        pygame.display.set_caption("sim playback")
         self.surface = pygame.Surface(self.screen.get_size()).convert()
         self.running = True
 
