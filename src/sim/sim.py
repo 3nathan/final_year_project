@@ -7,7 +7,10 @@ class Sim():
         self.model = mujoco.MjModel.from_xml_path(model_path)
         self.data = mujoco.MjData(self.model)
     
-    def render_video(self, duration=10, framerate=60, camera=None):
+    def render_video(self, duration=3, framerate=60, camera=None):
+        if duration == None:
+            duration = 3
+
         frames = []
         mujoco.mj_resetData(self.model, self.data)
 
