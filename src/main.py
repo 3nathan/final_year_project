@@ -53,5 +53,10 @@ def main():
         display = Display(len(frames[0][0]), len(frames[0]))
         display.show_video(frames)
 
+    elif args.video == "image":
+        img = simulation.render_image(time=args.time)
+        display = Display(len(img[0]), len(img))
+        display.show_img(img)
+
 if __name__ == '__main__':
     main()

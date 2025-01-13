@@ -6,8 +6,26 @@ class Sim():
     def __init__(self, model_path):
         self.model = mujoco.MjModel.from_xml_path(model_path)
         self.data = mujoco.MjData(self.model)
-    
-    def render_video(self, duration=3, framerate=60, camera=None):
+
+    # implement a parameterised camera
+    def render_image(self, time=0):
+        if time == None:
+            time = 0
+
+        mujoco.mj_resetData(self.model, self.data)
+        mujoco.mj_forward(self.model, self.data)
+
+        with mujoco.Renderer(self.model) as renderer:
+            while self.data.time < time:
+                self.update_control()
+                mujoco.mj_step(self.model, self.data)
+
+            renderer.update_scene(self.data)
+
+            return renderer.render()
+
+    # implement a parameterised camera
+    def render_video(self, duration=3, framerate=60):
         if duration == None:
             duration = 3
 
@@ -17,7 +35,6 @@ class Sim():
         with mujoco.Renderer(self.model) as renderer:
             while self.data.time < duration:
                 self.update_control()
-
                 mujoco.mj_step(self.model, self.data)
 
                 if len(frames) < self.data.time * framerate:
