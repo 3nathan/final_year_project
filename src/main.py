@@ -49,7 +49,6 @@ def main():
     simulation = Sim(args.model)
 
     if args.video == "video":
-        print("duration:", args.time)
         frames = simulation.render_video(duration=args.time)
         display = Display(len(frames[0][0]), len(frames[0]))
         display.show_video(frames)
