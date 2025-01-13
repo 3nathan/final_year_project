@@ -1,3 +1,4 @@
 src/sim/__pycache__
+src/util/__pycache__
 src/sim/MUJOCO_LOG.TXT
 venv
