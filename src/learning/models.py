@@ -1,32 +1,5 @@
-# most of this code is lifted from the pytorch reinforcement q learning tutorial:
-# # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-
-# it references the original q learning paper:
-# https://arxiv.org/abs/1312.5602
-
 import torch
 import torch.nn as nn
-
-# replay memory (taken from pytorch tutorial)
-# stores transitions that the agent observes
-# allows later reuse
-# random sampling of this data build up decorrelated batches
-# shown that this greatly stabilises and improves DQN training procedure
-
-# implement this later:
-# class ReplayMemory(object):
-#     def __init__(self, capacity):
-#         self.memory = deque([], maxlen=capacity)
-
-#     def push(self, *args):
-#         """Save a transition""")
-#         self.memory.append(Transision(*args))
-
-#     def sample(self, batch_size):
-#         return random.sample(self.memory, batch_size)
-
-#     def __len__(self):
-#         return len(self.memory)
 
 # this is a latent-conditioned RL policy
 # the latent variable z represents gaits
@@ -49,17 +22,44 @@ class GaitPolicy(nn.Module):
             layers.append(activation)
             last_dim = curr_dim
         
-        model = nn.Sequential(*layers)
+        self.model = nn.Sequential(*layers)
 
         self.mean_head = nn.Linear(hidden_dims[-1], action_dim)
         self.log_std_head = nn.Linear(hidden_dims[-1], action_dim)
 
     def forward(self, obs, z):
         x = torch.cat([obs, z], dim=1)
-        x = model(x)
+        x = self.model(x)
 
         mean = self.mean_head(x)
         log_std = self.log_std_head(x)
         std = torch.exp(log_std)
 
         return mean, std
+
+# most of this code is lifted from the pytorch reinforcement q learning tutorial:
+# # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+
+# it references the original q learning paper:
+# https://arxiv.org/abs/1312.5602
+
+# replay memory (taken from pytorch tutorial)
+# stores transitions that the agent observes
+# allows later reuse
+# random sampling of this data build up decorrelated batches
+# shown that this greatly stabilises and improves DQN training procedure
+
+# implement this later:
+# class ReplayMemory(object):
+#     def __init__(self, capacity):
+#         self.memory = deque([], maxlen=capacity)
+
+#     def push(self, *args):
+#         """Save a transition""")
+#         self.memory.append(Transision(*args))
+
+#     def sample(self, batch_size):
+#         return random.sample(self.memory, batch_size)
+
+#     def __len__(self):
+#         return len(self.memory)
