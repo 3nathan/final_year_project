@@ -43,7 +43,7 @@ class GaitPolicy(nn.Module):
         self.layer2 = nn.Linear(128, 128)
         self.layer3 = nn.Linear(128, n_actions)
     
-    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(256, 256), activation=nn.LeakyReLU(0.01)):
+    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01)):
         super().__init__()
         input_dim = obs_dim + latent_dim
 
