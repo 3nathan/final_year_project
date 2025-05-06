@@ -6,16 +6,6 @@
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F 
-
-device = torch.device(
-        "cuda" if torch.cuda.is_available() else
-        "mps" if torch.backends.mps.is_available() else
-        "cpu"
-)
-
-print(f"Using {device} device")
 
 # replay memory (taken from pytorch tutorial)
 # stores transitions that the agent observes
@@ -23,28 +13,53 @@ print(f"Using {device} device")
 # random sampling of this data build up decorrelated batches
 # shown that this greatly stabilises and improves DQN training procedure
 
-class ReplayMemory(object):
-    def __init__(self, capacity):
-        self.memory = deque([], maxlen=capacity)
+# implement this later:
+# class ReplayMemory(object):
+#     def __init__(self, capacity):
+#         self.memory = deque([], maxlen=capacity)
 
-    def push(self, *args):
-        """Save a transition""")
-        self.memory.append(Transision(*args))
+#     def push(self, *args):
+#         """Save a transition""")
+#         self.memory.append(Transision(*args))
 
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+#     def sample(self, batch_size):
+#         return random.sample(self.memory, batch_size)
 
-    def __len__(self):
-        return len(self.memory)
+#     def __len__(self):
+#         return len(self.memory)
 
-class DQN(nn.Module):
+# this is a latent-conditioned RL policy
+# the latent variable z represents gaits
+#   this could be:
+#       body pose
+#       xdot wrt facing direction
+#       thetadot
+# it outputs an action distribution (joint torgues/target positions)
+
+class GaitPolicy(nn.Module):
     def __init__(self, n_observations, n_actions):
-        super(DQN, self).__init__()
+        super().__init__()
         self.layer1 = nn.Linear(n_observations, 128)
         self.layer2 = nn.Linear(128, 128)
         self.layer3 = nn.Linear(128, n_actions)
+    
+    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(256, 256), activation=nn.LeakyReLU(0.01)):
+        super().__init__()
+        input_dim = obs_dim + latent_dim
 
-    def forward(self, x):
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
-        return self.layer3(x)
+        # setup network based on given hidden dimensions
+        layers = []
+        last_dim = input_dim
+        for curr_dim in hidden_dims:
+            layers.append(nn.Linear(last_dim, curr_dim))
+            layers.append(activation)
+            last_dim = curr_dim
+        
+        model = nn.Sequential(*layers)
+        self.log_std = nn.Parameter(torch.zeros(action_dim))
+
+    def forward(self, obs, z):
+        x = torch.cat([obs, z], dim=1)
+        mean = model(x)
+        std = torch.exp(self.log_std)
+        return mean, std
