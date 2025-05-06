@@ -56,10 +56,16 @@ class GaitPolicy(nn.Module):
             last_dim = curr_dim
         
         model = nn.Sequential(*layers)
-        self.log_std = nn.Parameter(torch.zeros(action_dim))
+
+        self.mean_head = nn.Linear(hidden_dims[-1], action_dim)
+        self.log_std_head = nn.Linear(hidden_dims[-1], action_dim)
 
     def forward(self, obs, z):
         x = torch.cat([obs, z], dim=1)
-        mean = model(x)
-        std = torch.exp(self.log_std)
+        x = model(x)
+
+        mean = self.mean_head(x)
+        log_std = self.log_std_head(x)
+        std = torch.exp(log_std)
+
         return mean, std
