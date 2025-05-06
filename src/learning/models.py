@@ -37,12 +37,6 @@ import torch.nn as nn
 # it outputs an action distribution (joint torgues/target positions)
 
 class GaitPolicy(nn.Module):
-    def __init__(self, n_observations, n_actions):
-        super().__init__()
-        self.layer1 = nn.Linear(n_observations, 128)
-        self.layer2 = nn.Linear(128, 128)
-        self.layer3 = nn.Linear(128, n_actions)
-    
     def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01)):
         super().__init__()
         input_dim = obs_dim + latent_dim
