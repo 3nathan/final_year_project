@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from util.config import DEVICE
+
 # this is a latent-conditioned RL policy
 # the latent variable z represents gaits
 #   this could be:
@@ -10,8 +12,9 @@ import torch.nn as nn
 # it outputs an action distribution (joint torgues/target positions)
 
 class GaitPolicy(nn.Module):
-    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01)):
+    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01), device=DEVICE):
         super().__init__()
+        self.device = device
         input_dim = obs_dim + latent_dim
 
         # setup network based on given hidden dimensions
@@ -27,9 +30,8 @@ class GaitPolicy(nn.Module):
         self.mean_head = nn.Linear(hidden_dims[-1], action_dim)
         self.log_std_head = nn.Linear(hidden_dims[-1], action_dim)
 
-    def forward(self, obs, z):
-        x = torch.cat([obs, z], dim=1)
-        x = self.model(x)
+    def forward(self, x):
+        x = self.model(x.to(self.device))
 
         mean = self.mean_head(x)
         log_std = self.log_std_head(x)
@@ -37,7 +39,7 @@ class GaitPolicy(nn.Module):
 
         return mean, std
 
-# most of this code is lifted from the pytorch reinforcement q learning tutorial:
+# most of the following code is lifted from the pytorch reinforcement q learning tutorial:
 # # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
 # it references the original q learning paper:
@@ -49,17 +51,4 @@ class GaitPolicy(nn.Module):
 # random sampling of this data build up decorrelated batches
 # shown that this greatly stabilises and improves DQN training procedure
 
-# implement this later:
-# class ReplayMemory(object):
-#     def __init__(self, capacity):
-#         self.memory = deque([], maxlen=capacity)
-
-#     def push(self, *args):
-#         """Save a transition""")
-#         self.memory.append(Transision(*args))
-
-#     def sample(self, batch_size):
-#         return random.sample(self.memory, batch_size)
-
-#     def __len__(self):
-#         return len(self.memory)
+# TODO: in the future, implement the memory recall functionality for training the DQN model

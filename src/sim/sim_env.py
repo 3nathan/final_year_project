@@ -3,11 +3,16 @@ import torch
 import mujoco
 from mujoco import MjModel, MjData
 
+from util.config import Config
+
 # import time
 # from learning.genghis import Genghis
 
+CONFIG = Config()
+
 class SimEnv():
     def __init__(self, model_path, seed=None):
+        print(f"Loading MuJoCo model: {model_path} into the simulation enviroment")
         self.model = MjModel.from_xml_path(model_path)
         self.data = MjData(self.model)
 
@@ -16,6 +21,8 @@ class SimEnv():
         self.obs_dim = self.model.nq + self.model.nv
 
         self.rng = np.random.default_rng(seed)
+
+        print("Simulation environment initialised")
 
     def step(self, action):
         """
@@ -35,12 +42,12 @@ class SimEnv():
 
         return observation, reward, done, info
 
-    def reset():
+    def reset(self):
         mujoco.mj_resetData(self.model, self.data)
         self._apply_reset_noise()
         return self._get_obs()
 
-    def set_seed():
+    def set_seed(self):
         """
         Set the random seed for reproducibility
         """
@@ -59,7 +66,6 @@ class SimEnv():
         """
         # reward should be in terms of compliance with the gait
         # gait parameters can be randomised
-
         reward = 0
         return reward
 
@@ -68,10 +74,7 @@ class SimEnv():
         """
         Check if the episode should terminate
         """
-        # should be in terms of whether the time has elapsed or if the robot exits the
-        # physical simulation bounds or if the robot is unrecoverable (upside down)
-
-        return 0
+        return self.data.time >= CONFIG.EPISODE_DURATION
 
     def _apply_reset_noise(self):
         """
