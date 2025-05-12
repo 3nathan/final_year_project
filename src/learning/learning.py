@@ -21,13 +21,16 @@ LR = 1e-2
 # https://www.geeksforgeeks.org/reinforcement-learning-using-pytorch/
 
 class ReinforcementLearning():
-    def __init__(self, model_path, policy=GaitPolicy, seed=None):
+    def __init__(self, model_path, policy=GaitPolicy, device=CONFIG.DEVICE, seed=None):
         self.env = SimEnv(model_path=model_path, seed=seed)
 
         obs_dim, action_dim = self.env.get_dims()
         self._latent = self._generate_latent_dist(mu=0, sigma=1, size=CONFIG.GENGHIS_CTRL_DIM)
         hidden_dims = (512, 512, 512)
         self.policy = policy(obs_dim=obs_dim, action_dim=action_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
+
+        self.policy.to(device)
+        print(f"Training on {device}")
 
     def train(self, optimiser=None, episodes=None):
         if optimiser is None:
@@ -36,14 +39,15 @@ class ReinforcementLearning():
         if episodes is None:
             episodes = 1000
 
+        # TODO:
         # perform inference on cpu if using a mac
         # avoids costs associated with sim env data transfer latency
 
-        if CONFIG.USING_MAC is True:
-            device_infer = torch.device("cpu")
-        else:
-            device_infer = CONFIG.DEVICE
-        device_train = CONFIG.DEVICE
+        # if CONFIG.USING_MAC is True:
+        #     device_infer = torch.device("cpu")
+        # else:
+        #     device_infer = CONFIG.DEVICE
+        # device_train = CONFIG.DEVICE
 
         episode_rewards = []
 
@@ -51,7 +55,6 @@ class ReinforcementLearning():
 
         for episode in range(episodes):
             print(f"Episode {episode}")
-            self.policy.to(device_infer)
             z = self._sample_latent_dist()
             observation = self.env.reset()
             log_probs = []      # TODO: check what this corresponds to
@@ -59,11 +62,8 @@ class ReinforcementLearning():
             done = False
 
             while not done:
-                input_tensor = self._get_input_tensor(observation, z, device=device_infer)
-
-                with torch.no_grad():
-                    mean, std = self.policy(input_tensor)
-
+                input_tensor = self._get_input_tensor(observation, z)
+                mean, std = self.policy(input_tensor)
                 distribution = Normal(mean, std)
                 action = distribution.sample()
                 observation, reward, done, _ = self.env.step(action)
@@ -72,7 +72,6 @@ class ReinforcementLearning():
                 rewards.append(reward)
 
                 if done:
-                    self.policy.to(device_train)
                     episode_rewards.append(sum(rewards))
                     discounted_rewards = self._compute_discounted_rewards(rewards)
                     policy_loss = []
