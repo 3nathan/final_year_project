@@ -10,7 +10,7 @@ from sim.sim_env import SimEnv
 from sim.display import Display
 
 # machine learning modules
-from learning.learning import ReinforcementLearning
+from learning.training import ReinforcementLearning
 
 def main():
     args = parse()

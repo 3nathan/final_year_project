@@ -5,14 +5,14 @@ from mujoco import MjModel, MjData
 
 from util.config import Config
 
-# import time
-# from learning.genghis import Genghis
+# needed for the reward functionm stuff
+import math
 
 CONFIG = Config()
 
 class SimEnv():
     def __init__(self, model_path, seed=None):
-        print(f"Loading MuJoCo model: {model_path} into the simulation enviroment")
+        print(f"Loading MuJoCo model: {model_path} into the simulation environment")
         self.model = MjModel.from_xml_path(model_path)
         self.data = MjData(self.model)
 
@@ -23,6 +23,11 @@ class SimEnv():
         self.rng = np.random.default_rng(seed)
 
         print("Simulation environment initialised")
+
+        # hard coded for genghis reward function
+        self.body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "genghis")
+        self.latent_velocity = np.zeros(2)
+        # hard coded for genghis reward function
 
     def step(self, action):
         """
@@ -49,6 +54,11 @@ class SimEnv():
 
     def reset(self):
         mujoco.mj_resetData(self.model, self.data)
+        # hard coded for genghis reward function
+        self.R = self.data.xmat[self.body_id].reshape(3, 3)
+        self.initial_height = 0.1
+        self.initial_yaw = math.atan2(self.R[1, 0], self.R[0, 0])
+        # hard coded for genghis reward function
         self._apply_reset_noise()
         return self._get_obs()
 
@@ -71,7 +81,34 @@ class SimEnv():
         """
         # reward should be in terms of compliance with the gait
         # gait parameters can be randomised
-        reward = 0
+        # gait is defined as the following vectors concatenated:
+        #   x_body
+        #   x_dot_body
+        #   theta_dot_body
+        # the reward function is hard coded for genghis here:
+        R = self.data.xmat[self.body_id].reshape(3, 3)
+        yaw = math.atan2(R[1, 0], R[0, 0])
+        height = self.data.xpos[self.body_id][2]
+        v_global = self.data.cvel[self.body_id][:3]
+        v_local = R.T @ v_global
+        v_2d_local = v_local[:2]  # [forward/backward, left/right]
+
+        vel_error = np.linalg.norm(v_2d_local - self.latent_velocity) # define latent velocity
+        reward_vel = np.exp(-vel_error**2)
+
+        yaw_error = np.abs(yaw - self.initial_yaw)
+        yaw_error = (yaw_error + np.pi) % (2 * np.pi) - np.pi
+        reward_yaw = np.exp(-yaw_error**2/0.01)
+
+        height_error = np.abs(height - self.initial_height)
+        reward_height = np.exp(-height_error**2 / 0.01)
+
+        reward = (
+            0.6 * reward_vel +
+            0.2 * reward_yaw +
+            0.2 * reward_height
+        )
+        
         return reward
 
     # modify to define when an episode should end

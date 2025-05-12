@@ -56,8 +56,10 @@ class ReinforcementLearning():
 
         for episode in range(episodes):
             z = self._sample_latent_dist()
+            # hard coded for genghis reward function
+            self.env.latent_velocity = z
+            # hard coded for genghis reward function
             observation = self.env.reset()
-            # exit()
             log_probs = []      # TODO: check what this corresponds to
             rewards = []
             done = False
@@ -73,7 +75,6 @@ class ReinforcementLearning():
                 rewards.append(reward)
 
                 if done:
-                    exit()
                     episode_rewards.append(sum(rewards))
                     discounted_rewards = self._compute_discounted_rewards(rewards)
                     policy_loss = []
@@ -89,8 +90,9 @@ class ReinforcementLearning():
                             ["Episode", "Reward", "Loss"],
                             [episode, sum(rewards), policy_loss.item()]
                         )
-                        weights_path = "genghis_episode_" + episode + ".pth"
-                        torch.save(policy.state_dict(). weights_path)
+                        # TODO: implement ability to save model weights
+                        # weights_path = "genghis_episode_" + str(episode) + ".pth"
+                        # torch.save(self.policy.state_dict(). weights_path)
                     break
 
     def _get_input_tensor(*vectors, device=CONFIG.DEVICE, dtype=torch.float32):

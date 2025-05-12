@@ -16,4 +16,4 @@ class Config():
         self.USING_MAC = platform.system() == "Darwin"
 
         # Genghis configs
-        self.GENGHIS_CTRL_DIM = 4
+        self.GENGHIS_CTRL_DIM = 2
