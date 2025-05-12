@@ -3,13 +3,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.functional as F
-from torch.distributions import Categorical
+from torch.distributions import Normal
 
 from sim.sim_env import SimEnv
 from learning.models import GaitPolicy
 
 from util.config import Config
-from util.config import DEVICE
 
 CONFIG = Config()
 
@@ -30,15 +29,29 @@ class ReinforcementLearning():
         hidden_dims = (512, 512, 512)
         self.policy = policy(obs_dim=obs_dim, action_dim=action_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
 
-        self.policy.to(DEVICE)
-
-    def train(self, optimiser=None, episodes=1000):
+    def train(self, optimiser=None, episodes=None):
         if optimiser is None:
             optimiser = optim.Adam(self.policy.parameters(), lr=LR)
+
+        if episodes is None:
+            episodes = 1000
+
+        # perform inference on cpu if using a mac
+        # avoids costs associated with sim env data transfer latency
+
+        if CONFIG.USING_MAC is True:
+            device_infer = torch.device("cpu")
+        else:
+            device_infer = CONFIG.DEVICE
+        device_train = CONFIG.DEVICE
+
+        episode_rewards = []
 
         print(f"Beginning training on {episodes} episodes")
 
         for episode in range(episodes):
+            print(f"Episode {episode}")
+            self.policy.to(device_infer)
             z = self._sample_latent_dist()
             observation = self.env.reset()
             log_probs = []      # TODO: check what this corresponds to
@@ -46,35 +59,36 @@ class ReinforcementLearning():
             done = False
 
             while not done:
-                input_tensor = self._get_input_tensor(observation, z)
-                distribution = self.policy(input_tensor)
-                print("Exiting program from the training loop, further debugging needed")
-                exit(0)
-                m = Categorical(distribution)
+                input_tensor = self._get_input_tensor(observation, z, device=device_infer)
+
+                with torch.no_grad():
+                    mean, std = self.policy(input_tensor)
+
+                distribution = Normal(mean, std)
                 action = distribution.sample()
                 observation, reward, done, _ = self.env.step(action)
-
-                log_probs.append(m.log_prob(action))
+                
+                log_probs.append(distribution.log_prob(action))
                 rewards.append(reward)
-                exit()
 
                 if done:
+                    self.policy.to(device_train)
                     episode_rewards.append(sum(rewards))
-                    discounted_rewards = self,_compute_discounted_rewards(rewards)    # TODO: need to check if this needs to be implemented
-                    # TODO: need to alter the following depending on the rl algorithm used
+                    discounted_rewards = self._compute_discounted_rewards(rewards)
                     policy_loss = []
-                    for log_prob, Gt in zip(log_probs, dicounted_rewards):
+                    for log_prob, Gt in zip(log_probs, discounted_rewards):
                         policy_loss.append(-log_prob * Gt)
                     optimiser.zero_grad()
                     policy_loss = torch.cat(policy_loss).sum()
                     policy_loss.backward()
                     optimiser.step()
+                    exit()
 
                     if episode % 50 == 0:
                         print(f"Episode {episode}, Total Reward: {sum(rewards)}")
                     break
 
-    def _get_input_tensor(*vectors, device=DEVICE, dtype=torch.float32):
+    def _get_input_tensor(*vectors, device=CONFIG.DEVICE, dtype=torch.float32):
         concatenated = np.concatenate(vectors[1:])
         tensor = torch.from_numpy(concatenated).to(dtype)
 

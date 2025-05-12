@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 
-from util.config import DEVICE
+from util.config import Config
+
+CONFIG = Config()
 
 # this is a latent-conditioned RL policy
 # the latent variable z represents gaits
@@ -12,9 +14,8 @@ from util.config import DEVICE
 # it outputs an action distribution (joint torgues/target positions)
 
 class GaitPolicy(nn.Module):
-    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01), device=DEVICE):
+    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01)):
         super().__init__()
-        self.device = device
         input_dim = obs_dim + latent_dim
 
         # setup network based on given hidden dimensions
@@ -31,7 +32,7 @@ class GaitPolicy(nn.Module):
         self.log_std_head = nn.Linear(hidden_dims[-1], action_dim)
 
     def forward(self, x):
-        x = self.model(x.to(self.device))
+        x = self.model(x)
 
         mean = self.mean_head(x)
         log_std = self.log_std_head(x)

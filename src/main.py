@@ -45,9 +45,10 @@ def main():
     #     display.show_img(img)
 
     if args.train == True:
-        print("Training RL model:")
-        training = ReinforcementLearning(str(args.model))
-        training.train()
+        print("Training RL model")
+
+        model = ReinforcementLearning(str(args.model))
+        model.train(episodes=args.episodes)
         
 
 if __name__ == '__main__':

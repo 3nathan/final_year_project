@@ -13,6 +13,10 @@ def parse():
                         action='store_true',
                         help="train model")
 
+    parser.add_argument('-e', '--episodes',
+                        type=int,
+                        help="number of episodes in the training loop")
+
     # # need to implement once ML models are implemented
     # parser.add_argument('-c', '--control',
     #                     type=str,

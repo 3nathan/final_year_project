@@ -29,8 +29,13 @@ class SimEnv():
         Apply the action, step the simulation forward and return observation, reward, done, info
         """
         # ensure action is within control limits
-        action = np.clip(action, self.model.actuator_ctrlrange[:, 0], self.model.actuator_ctrlrange[:, 1])
-        self.data.ctrl[:] = action
+        action_np = action.detach().cpu().numpy()
+        action_clipped = np.clip(
+            action_np,
+            self.model.actuator_ctrlrange[:, 0],
+            self.model.actuator_ctrlrange[:, 1]
+        )
+        self.data.ctrl[:] = action_clipped
 
         mujoco.mj_step(self.model, self.data)
         observation = self._get_obs()
