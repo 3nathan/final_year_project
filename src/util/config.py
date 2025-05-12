@@ -10,6 +10,7 @@ class Config():
             "cpu"
         )
         self.EPISODE_DURATION = 10
+        self.LOG_INTERVAL = 10
 
         # Machine configs
         self.USING_MAC = platform.system() == "Darwin"

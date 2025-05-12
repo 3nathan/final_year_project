@@ -9,6 +9,7 @@ from sim.sim_env import SimEnv
 from learning.models import GaitPolicy
 
 from util.config import Config
+from util.functions import print_rl_log
 
 CONFIG = Config()
 
@@ -54,7 +55,6 @@ class ReinforcementLearning():
         print(f"Beginning training on {episodes} episodes")
 
         for episode in range(episodes):
-            print(f"Episode {episode}")
             z = self._sample_latent_dist()
             observation = self.env.reset()
             log_probs = []      # TODO: check what this corresponds to
@@ -81,10 +81,13 @@ class ReinforcementLearning():
                     policy_loss = torch.cat(policy_loss).sum()
                     policy_loss.backward()
                     optimiser.step()
-                    exit()
 
-                    if episode % 50 == 0:
-                        print(f"Episode {episode}, Total Reward: {sum(rewards)}")
+                    if episode % CONFIG.LOG_INTERVAL == 0:
+                        print_rl_log(
+                            ["Episode", "Reward", "Loss"],
+                            [episode, sum(rewards), policy_loss.item()]
+                        )
+                        exit()
                     break
 
     def _get_input_tensor(*vectors, device=CONFIG.DEVICE, dtype=torch.float32):
