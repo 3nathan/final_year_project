@@ -10,7 +10,7 @@
         <camera name="side" pos="0 0 0" quat="1 0 0 0"/>
 
         <body name="plain">
-            <geom name="ground" type="plane" size="12 12 12" rgba="0.00 0.91 0.14 1"/>
+            <geom name="ground" type="plane" size="100 100 100" rgba="0.00 0.91 0.14 1"/>
         </body>
 
         <body name="genghis" pos="0 0 0.1">

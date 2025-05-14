@@ -1,8 +1,10 @@
 import numpy as np
 import torch
+import time
 import mujoco
 from mujoco import MjModel, MjData
 
+from sim.display import Display
 from util.config import Config
 
 # needed for the reward functionm stuff
@@ -11,10 +13,16 @@ import math
 CONFIG = Config()
 
 class SimEnv():
-    def __init__(self, model_path, seed=None):
+    def __init__(self, model_path, seed=None, video=False):
         print(f"Loading MuJoCo model: {model_path} into the simulation environment")
         self.model = MjModel.from_xml_path(model_path)
         self.data = MjData(self.model)
+
+        self.render_video = video
+
+        if video is True:
+            self.display = Display()
+            self.renderer = mujoco.Renderer(self.model, width=CONFIG.DISPLAY_W, height=CONFIG.DISPLAY_H)
 
         # adjust following based on specific actuators and state variables
         self.action_dim = self.model.nu
@@ -46,6 +54,11 @@ class SimEnv():
         observation = self._get_obs()
         reward = self._compute_reward(observation, action)
         done = self._check_done(observation)
+
+        if self.render_video and self.display.running:
+            img = self.renderer.render()
+            # self._handle_fps_timing()
+            self.display.show_img(img)
         
         # info dictionary can include diagnostic data
         info = {}
@@ -128,6 +141,9 @@ class SimEnv():
 
     def get_dims(self):
         return self.obs_dim, self.action_dim
+
+    def _handle_fps_timing(self, fps=60):
+        pass
 
     # implement a parameterised camera
     # def render_image(self, time=0):

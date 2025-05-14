@@ -1,25 +1,18 @@
 # taken from chatGPT
-def print_rl_log(headers, values, widths=None):
-    """
-    Pretty-print RL stats in tabular form using tabs.
+class Logger:
+    def __init__(self, headers, widths=None):
+        self.headers = headers
+        if widths is None:
+            self.widths = [max(len(str(h)), 10) for h in headers]
+        else:
+            self.widths = widths
+        header_str = "\t".join(f"{h:<{w}}" for h, w in zip(self.headers, self.widths))
+        print(header_str)
 
-    Args:
-        headers (list of str): Column headers.
-        values (list): Corresponding values (can be float, int, str).
-        widths (list of int, optional): Widths for each column (for alignment).
-    """
-    assert len(headers) == len(values), "Headers and values must match in length"
-
-    if widths is None:
-        widths = [max(len(str(h)), 10) for h in headers]
-
-    # Format header
-    header_str = "\t".join(f"{h:<{w}}" for h, w in zip(headers, widths))
-    value_str = "\t".join(
-        f"{v:<{w}.4f}" if isinstance(v, float) else f"{str(v):<{w}}"
-        for v, w in zip(values, widths)
-    )
-
-    print(header_str)
-    print(value_str)
-
+    def log(self, values):
+        assert len(values) == len(self.headers)
+        value_str = "\t".join(
+            f"{v:<{w}.4f}" if isinstance(v, float) else f"{str(v):<{w}}"
+            for v, w in zip(values, self.widths)
+        )
+        print(value_str)

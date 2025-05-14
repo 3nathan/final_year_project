@@ -14,7 +14,7 @@ CONFIG = Config()
 # it outputs an action distribution (joint torgues/target positions)
 
 class GaitPolicy(nn.Module):
-    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU(0.01)):
+    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.ReLU()):
         super().__init__()
         input_dim = obs_dim + latent_dim
 
@@ -23,6 +23,7 @@ class GaitPolicy(nn.Module):
         last_dim = input_dim
         for curr_dim in hidden_dims:
             layers.append(nn.Linear(last_dim, curr_dim))
+            layers.append(nn.LayerNorm(curr_dim))
             layers.append(activation)
             last_dim = curr_dim
         
@@ -37,6 +38,7 @@ class GaitPolicy(nn.Module):
         mean = self.mean_head(x)
         log_std = self.log_std_head(x)
         std = torch.exp(log_std)
+        # std = torch.clamp(torch.exp(log_std), min=1e-3, max=1.0)
 
         return mean, std
 

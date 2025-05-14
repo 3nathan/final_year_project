@@ -5,19 +5,25 @@ import pygame
 import time
 import numpy as np
 
+from util.config import Config
+
+CONFIG = Config()
+
 class Display(object):
-    def __init__(self, W, H):
+    def __init__(self, W=CONFIG.DISPLAY_W, H=CONFIG.DISPLAY_H):
         pygame.init()
         self.screen = pygame.display.set_mode((W,H))
         pygame.display.set_caption("sim playback")
         self.surface = pygame.Surface(self.screen.get_size()).convert()
         self.running = True
 
+    # TODO: fix this so that user can close the display at any time
     def show_img(self, img):
         self.__blit_surface__(img)
 
-        while self.running:
-            self.__handle_close__()
+        self.__handle_close__()
+        # while self.running:
+        #     self.__handle_close__()
 
     def show_video(self, frames, fps=60):
         t = 1/fps
