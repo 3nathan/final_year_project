@@ -1,85 +1,100 @@
 <mujoco model="genghis">
     <default>
-        <joint type="hinge"/>
+        <joint type="hinge" damping="1"/>
+        <position kp="50"/>
+        <geom density="1000" contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
     </default>
 
     <worldbody>
         <light name="top" pos="0 0 4"/>
         <camera name="plan" pos="0 0 40" quat="1 0 0 0" fovy="10"/>
-        <camera name="zoom_plan" pos="0 0 40" quat="1 0 0 0" fovy="3"/>
-        <camera name="side" pos="0 0 0" quat="1 0 0 0"/>
+        <camera name="zoom_plan" pos="0 0 40" quat="1 0 0 0" fovy="5"/>
+        <camera name="side" pos="4 0 1" quat="1 1 1 1"/>
 
         <body name="plain">
-            <geom name="ground" type="plane" size="100 100 100" rgba="0.00 0.91 0.14 1"/>
+            <geom name="ground" type="plane" size="0 0 0.1" rgba="0.00 0.91 0.14 1" friction="1.0 0.1 0.0" contype="1" conaffinity="1"/>
         </body>
 
-        <body name="genghis" pos="0 0 0.1">
+        <body name="genghis" pos="0 0 0.35">
             <freejoint/>
-            <geom type="box" size="0.12 0.35 0.1" rgba="1 0 0 1"/>
+            <camera name="track_genghis" pos="0 0 7" quat="1 0 0 0" fovy="55"/>
+            <geom name="genghis_body" type="box" size="0.12 0.35 0.05" rgba="1 0 0 1" density="1000" contype="1" conaffinity="1"/>
 
             <!-- Leg 1 (front right) -->
             <body name="leg1_base" pos="0.12 0.35 0">
-                <joint name="leg1_pitch" axis="0 -1 0" limited="true" range="-90 -20"/>
-                <joint name="leg1_yaw" axis="0 0 1" limited="true" range="-45 45"/>
-                <geom name="ball1" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+                <joint name="leg1_pitch" axis="0 -1 0" limited="true" range="-115 -10"/>
+                <joint name="leg1_yaw" axis="0 0 1" limited="true" range="-60 60"/>
+                <geom name="ball1" size="0.04 0.04 0.04" rgba="1 1 1 1" density="1000" contype="1" conaffinity="1"/>
 
-                <body name="leg1" pos="0.12 0 0">
-                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                <body name="leg1" pos="0.18 0 0">
+                    <geom type="box" size="0.18 0.02 0.02" rgba="0 0 1 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <geom pos="0.18 0 0" size="0.03" rgba="1 0 0 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <site name="leg1_site" pos="0.18 0 0" size="0.03" rgba="0 0 0 0" type="sphere"/>
                 </body>
             </body>
 
             <!-- Leg 2 (middle right) -->
             <body name="leg2_base" pos="0.12 0 0">
-                <joint name="leg2_pitch" axis="0 -1 0" limited="true" range="-90 -20"/>
-                <joint name="leg2_yaw" axis="0 0 1" limited="true" range="-45 45"/>
-                <geom name="ball2" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+                <joint name="leg2_pitch" axis="0 -1 0" limited="true" range="-115 -10"/>
+                <joint name="leg2_yaw" axis="0 0 1" limited="true" range="-60 60"/>
+                <geom name="ball2" size="0.04 0.04 0.04" rgba="1 1 1 1" density="1000" contype="1" conaffinity="1"/>
 
-                <body name="leg2" pos="0.12 0 0">
-                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                <body name="leg2" pos="0.18 0 0">
+                    <geom type="box" size="0.18 0.02 0.02" rgba="0 0 1 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <geom pos="0.18 0 0" size="0.03" rgba="1 0 0 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <site name="leg2_site" pos="0.18 0 0" size="0.03" rgba="0 0 0 0" type="sphere"/>
                 </body>
             </body>
 
             <!-- Leg 3 (rear right) -->
             <body name="leg3_base" pos="0.12 -0.35 0">
-                <joint name="leg3_pitch" axis="0 -1 0" limited="true" range="-90 -20"/>
-                <joint name="leg3_yaw" axis="0 0 1" limited="true" range="-45 45"/>
-                <geom name="ball3" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+                <joint name="leg3_pitch" axis="0 -1 0" limited="true" range="-115 -10"/>
+                <joint name="leg3_yaw" axis="0 0 1" limited="true" range="-60 60"/>
+                <geom name="ball3" size="0.04 0.04 0.04" rgba="1 1 1 1" density="1000" contype="1" conaffinity="1"/>
 
-                <body name="leg3" pos="0.12 0 0">
-                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                <body name="leg3" pos="0.18 0 0">
+                    <geom type="box" size="0.18 0.02 0.02" rgba="0 0 1 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <geom pos="0.18 0 0" size="0.03" rgba="1 0 0 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <site name="leg3_site" pos="0.18 0 0" size="0.03" rgba="0 0 0 0" type="sphere"/>
                 </body>
             </body>
 
             <!-- Leg 4 (front left) -->
             <body name="leg4_base" pos="-0.12 0.35 0">
-                <joint name="leg4_pitch" axis="0 1 0" limited="true" range="-90 -20"/>
-                <joint name="leg4_yaw" axis="0 0 1" limited="true" range="-45 45"/>
-                <geom name="ball4" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+                <joint name="leg4_pitch" axis="0 1 0" limited="true" range="-115 -10"/>
+                <joint name="leg4_yaw" axis="0 0 1" limited="true" range="-60 60"/>
+                <geom name="ball4" size="0.04 0.04 0.04" rgba="1 1 1 1" density="1000" contype="1" conaffinity="1"/>
 
-                <body name="leg4" pos="-0.12 0 0">
-                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                <body name="leg4" pos="-0.18 0 0">
+                    <geom type="box" size="0.18 0.02 0.02" rgba="0 0 1 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <geom pos="-0.18 0 0" size="0.03" rgba="1 0 0 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <site name="leg4_site" pos="-0.18 0 0" size="0.03" rgba="0 0 0 0" type="sphere"/>
                 </body>
             </body>
 
             <!-- Leg 5 (middle left) -->
             <body name="leg5_base" pos="-0.12 0 0">
-                <joint name="leg5_pitch" axis="0 1 0" limited="true" range="-90 -20"/>
-                <joint name="leg5_yaw" axis="0 0 1" limited="true" range="-45 45"/>
-                <geom name="ball5" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+                <joint name="leg5_pitch" axis="0 1 0" limited="true" range="-115 -10"/>
+                <joint name="leg5_yaw" axis="0 0 1" limited="true" range="-60 60"/>
+                <geom name="ball5" size="0.04 0.04 0.04" rgba="1 1 1 1" density="1000" contype="1" conaffinity="1"/>
 
-                <body name="leg5" pos="-0.12 0 0">
-                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                <body name="leg5" pos="-0.18 0 0">
+                    <geom type="box" size="0.18 0.02 0.02" rgba="0 0 1 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <geom pos="-0.18 0 0" size="0.03" rgba="1 0 0 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <site name="leg5_site" pos="-0.18 0 0" size="0.03" rgba="0 0 0 0" type="sphere"/>
                 </body>
             </body>
                 
             <!-- Leg 6 (rear left) -->
             <body name="leg6_base" pos="-0.12 -0.35 0">
-                <joint name="leg6_pitch" axis="0 1 0" limited="true" range="-90 -20"/>
-                <joint name="leg6_yaw" axis="0 0 1" limited="true" range="-45 45"/>
-                <geom name="ball6" size="0.05 0.05 0.05" rgba="1 1 1 1"/>
+                <joint name="leg6_pitch" axis="0 1 0" limited="true" range="-115 -10"/>
+                <joint name="leg6_yaw" axis="0 0 1" limited="true" range="-60 60"/>
+                <geom name="ball6" size="0.04 0.04 0.04" rgba="1 1 1 1" density="1000" contype="1" conaffinity="1"/>
 
-                <body name="leg6" pos="-0.12 0 0">
-                    <geom type="box" size="0.2 0.02 0.02" rgba="0 0 1 1"/>
+                <body name="leg6" pos="-0.18 0 0">
+                    <geom type="box" size="0.18 0.02 0.02" rgba="0 0 1 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <geom pos="-0.18 0 0" size="0.03" rgba="1 0 0 1" friction="1.0 0.1 0.0" density="1000" contype="1" conaffinity="1"/>
+                    <site name="leg6_site" pos="-0.18 0 0" size="0.03" rgba="0 0 0 0" type="sphere"/>
                 </body>
             </body>
 
@@ -88,19 +103,28 @@
 
     <actuator>
         <!-- pitch -->
-        <position name="leg1_pitch_actuator" joint="leg1_pitch"/>
-        <position name="leg2_pitch_actuator" joint="leg2_pitch"/>
-        <position name="leg3_pitch_actuator" joint="leg3_pitch"/>
-        <position name="leg4_pitch_actuator" joint="leg4_pitch"/>
-        <position name="leg5_pitch_actuator" joint="leg5_pitch"/>
-        <position name="leg6_pitch_actuator" joint="leg6_pitch"/>
+        <position name="leg1_pitch_actuator" joint="leg1_pitch" inheritrange="1"/>
+        <position name="leg2_pitch_actuator" joint="leg2_pitch" inheritrange="1"/>
+        <position name="leg3_pitch_actuator" joint="leg3_pitch" inheritrange="1"/>
+        <position name="leg4_pitch_actuator" joint="leg4_pitch" inheritrange="1"/>
+        <position name="leg5_pitch_actuator" joint="leg5_pitch" inheritrange="1"/>
+        <position name="leg6_pitch_actuator" joint="leg6_pitch" inheritrange="1"/>
 
         <!-- yaw -->
-        <position name="leg1_yaw_actuator" joint="leg1_yaw"/>
-        <position name="leg2_yaw_actuator" joint="leg2_yaw"/>
-        <position name="leg3_yaw_actuator" joint="leg3_yaw"/>
-        <position name="leg4_yaw_actuator" joint="leg4_yaw"/>
-        <position name="leg5_yaw_actuator" joint="leg5_yaw"/>
-        <position name="leg6_yaw_actuator" joint="leg6_yaw"/>
+        <position name="leg1_yaw_actuator" joint="leg1_yaw" inheritrange="1"/>
+        <position name="leg2_yaw_actuator" joint="leg2_yaw" inheritrange="1"/>
+        <position name="leg3_yaw_actuator" joint="leg3_yaw" inheritrange="1"/>
+        <position name="leg4_yaw_actuator" joint="leg4_yaw" inheritrange="1"/>
+        <position name="leg5_yaw_actuator" joint="leg5_yaw" inheritrange="1"/>
+        <position name="leg6_yaw_actuator" joint="leg6_yaw" inheritrange="1"/>
     </actuator>
+
+    <sensor>
+      <touch name="leg1_sensor" site="leg1_site"/>
+      <touch name="leg2_sensor" site="leg2_site"/>
+      <touch name="leg3_sensor" site="leg3_site"/>
+      <touch name="leg4_sensor" site="leg4_site"/>
+      <touch name="leg5_sensor" site="leg5_site"/>
+      <touch name="leg6_sensor" site="leg6_site"/>
+    </sensor>
 </mujoco>

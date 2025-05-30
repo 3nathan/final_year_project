@@ -1,0 +1,111 @@
+<mujoco model="quadruped">
+    <default>
+        <joint type="hinge" damping="1"/>
+        <position kp="10"/>
+        <geom density="1000" contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
+    </default>
+
+    <worldbody>
+        <light name="top" pos="0 0 4"/>
+        <camera name="plan" pos="0 0 40" quat="1 0 0 0" fovy="40"/>
+        <camera name="zoom_plan" pos="0 0 40" quat="1 0 0 0" fovy="5"/>
+        <camera name="side" pos="2 0 0.2" quat="1 1 1 1"/>
+
+        <body name="plain">
+            <geom name="ground" type="plane" size="0 0 0.1" rgba="0.00 0.91 0.14 1"/>
+        </body>
+
+        <body name="quadruped" pos="0 0 0.15">
+            <freejoint/>
+            <geom name="quadruped_body" type="sphere" size="0.06"/>
+
+            <body name="leg1_seg1" pos="0.06 0 0">
+                <joint name="leg1_yaw" axis="0 0 1" range="-60 60"/>
+                <joint name="leg1_pitch" axis="0 -1 0" range="0 90"/>
+                
+                <geom type="capsule" size="0.018" fromto="0 0 0 0.1 0 0"/>
+
+                <body name="leg1_seg2" pos="0.1 0 0">
+                    <joint name="leg1_knee" axis="0 1 0" range="0 180"/>
+                    <geom type="capsule" size="0.018" fromto="0 0 0 0.15 0 0"/>
+                    <site name="foot1" pos="0.1 0 0" size="0.018" rgba="1 1 1 0"/>
+                </body>
+            </body>
+
+            <body name="leg2_seg1" pos="0 0.06 0">
+                <joint name="leg2_yaw" axis="0 0 1" range="-60 60"/>
+                <joint name="leg2_pitch" axis="1 0 0" range="0 90"/>
+
+                <geom type="capsule" size="0.018" fromto="0 0 0 0 0.1 0"/>
+
+                <body name="leg2_seg2" pos="0 0.1 0">
+                    <joint name="leg2_knee" axis="-1 0 0" range="0 180"/>
+                    <geom type="capsule" size="0.018" fromto="0 0 0 0 0.15 0"/>
+                    <site name="foot2" pos="0 0.1 0" size="0.018" rgba="1 1 1 0"/>
+                </body>
+            </body>
+
+            <body name="leg3_seg1" pos="-0.06 0 0">
+                <joint name="leg3_yaw" axis="0 0 1" range="-60 60"/>
+                <joint name="leg3_pitch" axis="0 1 0" range="0 90"/>
+
+                <geom type="capsule" size="0.018" fromto="0 0 0 -0.1 0 0"/>
+
+                <body name="leg3_seg2" pos="-0.1 0 0">
+                    <joint name="leg3_knee" axis="0 -1 0" range="0 180"/>
+                    <geom type="capsule" size="0.018" fromto="0 0 0 -0.15 0 0"/>
+                    <site name="foot3" pos="-0.1 0 0" size="0.018" rgba="1 1 1 0"/>
+                </body>
+            </body>
+
+            <body name="leg4_seg1" pos="0 -0.06 0">
+                <joint name="leg4_yaw" axis="0 0 1" range="-60 60"/>
+                <joint name="leg4_pitch" axis="-1 0 0" range="0 90"/>
+
+                <geom type="capsule" size="0.018" fromto="0 0 0 0 -0.1 0"/>
+
+                <body name="leg4_seg2" pos="0 -0.1 0">
+                    <joint name="leg4_knee" axis="1 0 0" range="0 180"/>
+                    <geom type="capsule" size="0.018" fromto="0 0 0 0 -0.15 0"/>
+                    <site name="foot4" pos="0 -0.1 0" size="0.018" rgba="1 1 1 0"/>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <contact>
+        <exclude body1="quadruped" body2="leg1_seg1"/>
+        <exclude body1="quadruped" body2="leg2_seg1"/>
+        <exclude body1="quadruped" body2="leg3_seg1"/>
+        <exclude body1="quadruped" body2="leg4_seg1"/>
+
+        <exclude body1="leg1_seg1" body2="leg1_seg2"/>
+        <exclude body1="leg2_seg1" body2="leg2_seg2"/>
+        <exclude body1="leg3_seg1" body2="leg3_seg2"/>
+        <exclude body1="leg4_seg1" body2="leg4_seg2"/>
+    </contact>
+
+    <actuator>
+        <position joint="leg1_yaw" inheritrange="1"/>
+        <position joint="leg2_yaw" inheritrange="1"/>
+        <position joint="leg3_yaw" inheritrange="1"/>
+        <position joint="leg4_yaw" inheritrange="1"/>
+
+        <position joint="leg1_pitch" inheritrange="1"/>
+        <position joint="leg2_pitch" inheritrange="1"/>
+        <position joint="leg3_pitch" inheritrange="1"/>
+        <position joint="leg4_pitch" inheritrange="1"/>
+
+        <position joint="leg1_knee" inheritrange="1"/>
+        <position joint="leg2_knee" inheritrange="1"/>
+        <position joint="leg3_knee" inheritrange="1"/>
+        <position joint="leg4_knee" inheritrange="1"/>
+    </actuator>
+
+    <sensor>
+        <touch name="leg1_sensor" site="foot1"/>
+        <touch name="leg2_sensor" site="foot2"/>
+        <touch name="leg3_sensor" site="foot3"/>
+        <touch name="leg4_sensor" site="foot4"/>
+    </sensor>
+</mujoco>

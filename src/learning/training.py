@@ -11,9 +11,9 @@ from learning.models import GaitPolicy
 from util.config import Config
 from util.functions import Logger
 
-CONFIG = Config()
+import sys
 
-LR = 1e-2
+CONFIG = Config()
 
 # using:
 # https://pytorch.org/tutorials/intermediate/reinforcement_ppo.html#value-network
@@ -22,90 +22,138 @@ LR = 1e-2
 # https://www.geeksforgeeks.org/reinforcement-learning-using-pytorch/
 
 class ReinforcementLearning():
-    def __init__(self, model_path, policy=GaitPolicy, device=CONFIG.DEVICE, seed=None, save=False, video=False):
+    def __init__(self, model_path, policy=GaitPolicy, seed=None, save=False, video=False):
         self.env = SimEnv(model_path=model_path, seed=seed, video=video)
         self.save = save
+        self.video = video
 
+        # obs_dim, action_dim, sensor_dim = self.env.get_dims()
         obs_dim, action_dim = self.env.get_dims()
         self._latent = self._generate_latent_dist(mu=0, sigma=0.2, size=CONFIG.GENGHIS_CTRL_DIM)
         hidden_dims = (512, 512, 512)
-        self.policy = policy(obs_dim=obs_dim, action_dim=action_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
+        # hidden_dims = (400, 300)
+        # self.policy = policy(obs_dim=obs_dim, action_dim=action_dim, sensor_dim=sensor_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
+        self.policy = policy(obs_dim=obs_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, action_dim=action_dim, hidden_dims=hidden_dims)
 
-        self.policy.to(device)
-        print(f"Training on {device}")
+        print(f"Training on {CONFIG.TRAIN_DEVICE}")
 
-    def train(self, optimiser=None, episodes=None):
-        if optimiser is None:
-            optimiser = optim.Adam(self.policy.parameters(), lr=LR)
+    def run_episode(self): # return log_probs, rewards etc
+        z = self._sample_latent_dist()
+        # hard coded for genghis reward function
+        self.env.latent_velocity = z
+        # hard coded for genghis reward function
 
-        if episodes is None:
-            episodes = 1000
+        log_probs = []
+        rewards = []
+        states = []
+        actions = []
+        
+        observation = self.env.reset()
+        done = False
+        episode_reward = 0
 
-        # TODO:
-        # perform inference on cpu if using a mac
-        # avoids costs associated with sim env data transfer latency
+        while not done:
+            input_tensor = self._get_input_tensor(observation, z)
+            input_tensor = input_tensor.to(CONFIG.INFER_DEVICE)
 
-        # if CONFIG.USING_MAC is True:
-        #     device_infer = torch.device("cpu")
-        # else:
-        #     device_infer = CONFIG.DEVICE
-        # device_train = CONFIG.DEVICE
+            mean, std = self.policy(input_tensor)
+            dist = Normal(mean, std)
+            action = dist.sample()
+            log_prob = dist.log_prob(action).sum()
 
-        if self.save:
-            print(f"Saving weights to {CONFIG.MODELS_PATH}/neural_networks/genghis.pth")
-
-        print(f"Beginning training on {episodes} episodes")
-
-        logger = Logger(["Episode", "Reward", "Loss"])
-
-        for episode in range(episodes):
-            z = self._sample_latent_dist()
-            # hard coded for genghis reward function
-            self.env.latent_velocity = z
-            # hard coded for genghis reward function
-
-            log_probs = []      # TODO: check what this corresponds to
-            rewards = []
+            observation, reward, done, _ = self.env.step(action.cpu())
             
-            observation = self.env.reset()
-            done = False
+            log_probs.append(log_prob)
+            rewards.append(reward)
+            states.append(input_tensor.cpu())
+            actions.append(action.cpu())
+
+            episode_reward += reward
+
+        returns = self._compute_discounted_rewards(rewards)
+
+        return log_probs, returns, episode_reward, states, actions
+
+    def train(self, algorithm=None, optimiser=None, trajectories=None, batch_size=None, epochs=None):
+        if algorithm is None:
+            algorithm = "PPO"
+        if optimiser is None:
+            optimiser = optim.Adam(self.policy.parameters(), lr=CONFIG.LR)
+        if trajectories is None:
+            trajectories = 100
+        if batch_size is None:
+            batch_size = CONFIG.BATCH_SIZE
+        if epochs is None:
+            epochs = CONFIG.EPOCHS
+        if self.save:
+            print(f"Saving weights to {CONFIG.ROOT}/models/neural_networks")
+
+        old_log_probs = None
+
+        print(f"Using {algorithm}")
+        print(f"{trajectories} trajectories")
+        print(f"{batch_size} episodes per trajectory")
+        print(f"{epochs} epochs per training batch")
+
+        logger = Logger(["Trajectory", "Reward"])
+
+        for trajectory in range(trajectories):
+            self.policy.to(CONFIG.INFER_DEVICE)
+
+            all_log_probs = []
+            all_returns = []
+            all_states = []
+            all_actions = []
             total_reward = 0
 
-            while not done:
-                input_tensor = self._get_input_tensor(observation, z)
-                mean, std = self.policy(input_tensor)
-                # print(f"Mean:\n {mean}")
-                # print(f"std:\n {std}")
-                distribution = Normal(mean, std)
-                action = distribution.sample()
-                log_prob = distribution.log_prob(action).sum()
+            for _ in range(batch_size):
+                log_probs, returns, episode_reward, states, actions = self.run_episode()
+                all_log_probs.extend(log_probs)
+                all_returns.extend(returns)
+                all_states.extend(states)
+                all_actions.extend(actions)
+                total_reward += episode_reward
+            
+            self.policy.to(CONFIG.TRAIN_DEVICE)
+            
+            log_probs_tensor = torch.stack(all_log_probs).to(CONFIG.TRAIN_DEVICE)
+            returns_tensor = torch.tensor(all_returns, dtype=torch.float32).to(CONFIG.TRAIN_DEVICE)
+            states_tensor = torch.stack(all_states).to(CONFIG.TRAIN_DEVICE)
+            actions_tensor = torch.stack(all_actions).to(CONFIG.TRAIN_DEVICE)
+            
+            old_log_probs = log_probs_tensor.detach().clone()
 
-                observation, reward, done, _ = self.env.step(action)
-                
-                log_probs.append(log_prob)
-                rewards.append(reward)
-                total_reward += reward
+            for epoch in range(epochs):
+                mean, std = self.policy(states_tensor)
+                dist = Normal(mean, std)
+                new_log_probs = dist.log_prob(actions_tensor).sum(dim=1)
 
-            returns = self._compute_discounted_rewards(rewards)
-            # returns = (returns - returns.mean()) / (returns.std() + 1e-8)   # normalise
+                if algorithm == "policy_gradient":
+                    policy_loss = -(new_log_probs * returns_tensor).mean()
 
-            policy_loss = -torch.stack(log_probs) * returns
-            policy_loss = policy_loss.sum()
+                elif algorithm == "PPO":
+                    ratio = torch.exp(new_log_probs - old_log_probs)
+                    policy_loss = -(torch.minimum(
+                        ratio*returns_tensor,
+                        torch.clamp(
+                            ratio, 
+                            1 - CONFIG.EPSILON, 
+                            1 + CONFIG.EPSILON
+                        )*returns_tensor)
+                    ).mean()
 
-            optimiser.zero_grad()
-            policy_loss.backward()
-            optimiser.step()
+                optimiser.zero_grad()
+                policy_loss.backward()
+                optimiser.step()
 
-            if episode % CONFIG.LOG_INTERVAL == 0:
-                logger.log([episode, sum(rewards), policy_loss.item()])
+            logger.log([trajectory, total_reward / batch_size])
 
-                if self.save:
-                    torch.save(self.policy.state_dict(), CONFIG.MODELS_PATH+'/neural_networks/genghis.pth')
+            if trajectory % 10 == 0 and self.video:
+                self.env.run_demo(policy=self.policy)
 
-    def _get_input_tensor(*vectors, device=CONFIG.DEVICE, dtype=torch.float32):
+    def _get_input_tensor(*vectors, device=CONFIG.INFER_DEVICE, dtype=torch.float32):
         concatenated = np.concatenate(vectors[1:])
         tensor = torch.from_numpy(concatenated).to(dtype)
-        tensor = tensor.to(device)
 
         return tensor
 
@@ -120,8 +168,10 @@ class ReinforcementLearning():
         return latent
 
     def _sample_latent_dist(self):
-        # return np.zeros(2)
-        return np.random.normal(self._latent["means"], self._latent["std"])
+        # TODO: this is only for demo purposes!
+        # undo the comment
+        # return np.random.normal(self._latent["means"], self._latent["std"])
+        return np.array([0.1, 0])
 
     # TODO: change this when an RL algorithm is decided
     def _compute_discounted_rewards(self, rewards, gamma=0.99):
@@ -132,7 +182,7 @@ class ReinforcementLearning():
             R = r + gamma * R
             discounted_rewards.insert(0, R)
 
-        discounted_rewards = torch.tensor(discounted_rewards)
-        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-5)
+        discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float32)
+        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-8)
         
         return discounted_rewards

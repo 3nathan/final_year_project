@@ -14,7 +14,7 @@ CONFIG = Config()
 # it outputs an action distribution (joint torgues/target positions)
 
 class GaitPolicy(nn.Module):
-    def __init__(self, obs_dim, action_dim, latent_dim, hidden_dims=(512, 512, 512), activation=nn.ReLU()):
+    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU):
         super().__init__()
         input_dim = obs_dim + latent_dim
 
@@ -24,7 +24,7 @@ class GaitPolicy(nn.Module):
         for curr_dim in hidden_dims:
             layers.append(nn.Linear(last_dim, curr_dim))
             layers.append(nn.LayerNorm(curr_dim))
-            layers.append(activation)
+            layers.append(activation(0.1))
             last_dim = curr_dim
         
         self.model = nn.Sequential(*layers)
@@ -35,12 +35,20 @@ class GaitPolicy(nn.Module):
     def forward(self, x):
         x = self.model(x)
 
-        mean = self.mean_head(x)
+        mean = torch.sigmoid(self.mean_head(x))
         log_std = self.log_std_head(x)
+        log_std = torch.clamp(log_std, min=-20, max=2)
         std = torch.exp(log_std)
-        # std = torch.clamp(torch.exp(log_std), min=1e-3, max=1.0)
 
         return mean, std
+
+    def save_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/quadruped.pth"):
+        torch.save(self.state_dict(), path)
+
+    def load_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/quadruped.pth"):
+        state_dict = torch.load(path, map_location=torch.device('cpu'))
+        self.load_state_dict(state_dict)
+
 
 # most of the following code is lifted from the pytorch reinforcement q learning tutorial:
 # # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html

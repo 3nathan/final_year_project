@@ -13,33 +13,35 @@ class Display(object):
     def __init__(self, W=CONFIG.DISPLAY_W, H=CONFIG.DISPLAY_H):
         pygame.init()
         self.screen = pygame.display.set_mode((W,H))
-        pygame.display.set_caption("sim playback")
+        pygame.display.set_caption("sim")
         self.surface = pygame.Surface(self.screen.get_size()).convert()
         self.running = True
 
-    # TODO: fix this so that user can close the display at any time
-    def show_img(self, img):
-        self.__blit_surface__(img)
-
-        self.__handle_close__()
-        # while self.running:
-        #     self.__handle_close__()
-
-    def show_video(self, frames, fps=60):
-        t = 1/fps
-        for frame in frames:
-            self.__handle_close__()
-            self.__blit_surface__(frame)
-            time.sleep(t)
-    
-    def __blit_surface__(self, img):
+    def draw_img(self, img):
         pygame.surfarray.blit_array(self.surface, img.swapaxes(0,1))
         self.screen.blit(self.surface, (0,0))
 
         pygame.display.flip()
 
-    def __handle_close__(self):
+    def show_video(self, frames, fps=60):
+        t = 1/fps
+        for frame in frames:
+            self.handle_close()
+            self.draw_img(frame)
+            time.sleep(t)
+    
+    # def __blit_surface__(self, img):
+    #     pygame.surfarray.blit_array(self.surface, img.swapaxes(0,1))
+    #     self.screen.blit(self.surface, (0,0))
+
+    #     pygame.display.flip()
+
+    def handle_close(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
                 pygame.quit()
+
+    def quit(self):
+        self.running = False
+        pygame.quit()

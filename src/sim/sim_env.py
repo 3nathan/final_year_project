@@ -1,11 +1,14 @@
 import numpy as np
 import torch
+from torch.distributions import Normal
 import time
 import mujoco
 from mujoco import MjModel, MjData
 
 from sim.display import Display
 from util.config import Config
+
+from learning.models import GaitPolicy
 
 # needed for the reward functionm stuff
 import math
@@ -18,48 +21,48 @@ class SimEnv():
         self.model = MjModel.from_xml_path(model_path)
         self.data = MjData(self.model)
 
-        self.render_video = video
+        # hard coded for genghis reward function
+        self.ground_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'plain')
+        self.body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'quadruped')
+        if self.body_id == -1:
+            self.body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'genghis')
+        self.latent_velocity = np.zeros(2)
+        # hard coded for genghis reward function
 
-        if video is True:
-            self.display = Display()
-            self.renderer = mujoco.Renderer(self.model, width=CONFIG.DISPLAY_W, height=CONFIG.DISPLAY_H)
+        self.render_video = video
 
         # adjust following based on specific actuators and state variables
         self.action_dim = self.model.nu
-        self.obs_dim = self.model.nq + self.model.nv
+        self.obs_dim = len(self._get_obs())
+        self.sensor_dim = self.model.nsensor
 
         self.rng = np.random.default_rng(seed)
+        
+        self._prev_sensor_data = np.zeros(self.model.nsensor)
+        self._robot_steps = 0
+
+        self._original_orientation=self.data.xquat[self.body_id]
+
 
         print("Simulation environment initialised")
-
-        # hard coded for genghis reward function
-        self.body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "genghis")
-        self.latent_velocity = np.zeros(2)
-        # hard coded for genghis reward function
 
     def step(self, action):
         """
         Apply the action, step the simulation forward and return observation, reward, done, info
         """
         # ensure action is within control limits
-        action_np = action.detach().cpu().numpy()
-        action_clipped = np.clip(
-            action_np,
-            self.model.actuator_ctrlrange[:, 0],
-            self.model.actuator_ctrlrange[:, 1]
-        )
-        self.data.ctrl[:] = action_clipped
+        action = action.detach().cpu().numpy()
+        action_clipped = np.clip(action, 0, 1)
+        action_scaled = action_clipped * (self.model.actuator_ctrlrange[:, 1] - self.model.actuator_ctrlrange[:, 0]) + self.model.actuator_ctrlrange[:, 0]
+        # print(f"time: {self.data.time}")
+        # print(action_scaled)
+        self.data.ctrl[:] = action_scaled
 
         mujoco.mj_step(self.model, self.data)
         observation = self._get_obs()
         reward = self._compute_reward(observation, action)
         done = self._check_done(observation)
 
-        if self.render_video and self.display.running:
-            img = self.renderer.render()
-            # self._handle_fps_timing()
-            self.display.show_img(img)
-        
         # info dictionary can include diagnostic data
         info = {}
 
@@ -85,7 +88,23 @@ class SimEnv():
         """
         Construct the observation from the MuJoCo data
         """
-        return np.concatenate([self.data.qpos.ravel(), self.data.qvel.ravel()])
+        filtered_sensor_data = np.zeros(self.model.nsensor)
+        self._robot_steps = 0
+
+        for i in range(self.model.nsensor):
+            if self.data.sensordata[i] > 0:
+                filtered_sensor_data[i] = 1
+                if self._prev_sensor_data[i] == 0:
+                    self._robot_steps +=1
+        
+        return np.concatenate([
+            self.data.qpos.ravel(),
+            self.data.qvel.ravel(),
+            self.data.xquat[self.body_id].ravel(),
+            self.data.xpos[self.body_id].ravel(),
+            self.data.cvel[self.body_id].ravel(),
+            filtered_sensor_data
+        ])
 
     # customise to reflect the objectives of the task
     def _compute_reward(self, observation, action):
@@ -99,30 +118,58 @@ class SimEnv():
         #   x_dot_body
         #   theta_dot_body
         # the reward function is hard coded for genghis here:
-        R = self.data.xmat[self.body_id].reshape(3, 3)
-        yaw = math.atan2(R[1, 0], R[0, 0])
-        height = self.data.xpos[self.body_id][2]
-        v_global = self.data.cvel[self.body_id][:3]
-        v_local = R.T @ v_global
-        v_2d_local = v_local[:2]  # [forward/backward, left/right]
+        # R = self.data.xmat[self.body_id].reshape(3, 3)
+        # yaw = math.atan2(R[1, 0], R[0, 0])
+        # height = self.data.xpos[self.body_id][2]
+        # v_global = self.data.cvel[self.body_id][:3]
+        # v_global = self.data.cvel[3][:3]
+        # v_local = R.T @ v_global
+        # v_2d_local = v_local[:2]  # [forward/backward, left/right]
 
-        vel_error = np.linalg.norm(v_2d_local - self.latent_velocity) # define latent velocity
-        reward_vel = np.exp(-vel_error**2)
+        # vel_error = np.linalg.norm(v_2d_local - self.latent_velocity) # define latent velocity
+        # reward_vel = np.exp(-vel_error*vel_error)
 
-        yaw_error = np.abs(yaw - self.initial_yaw)
-        yaw_error = (yaw_error + np.pi) % (2 * np.pi) - np.pi
-        reward_yaw = np.exp(-yaw_error**2/0.01)
+        # yaw_error = np.abs(yaw - self.initial_yaw)
+        # yaw_error = (yaw_error + np.pi) % (2 * np.pi) - np.pi
+        # reward_yaw = np.exp(-100*yaw_error*yaw_error)
 
-        height_error = np.abs(height - self.initial_height)
-        reward_height = np.exp(-height_error**2 / 0.01)
+        # height_error = np.abs(height - self.initial_height)
+        # reward_height = np.exp(-100*height_error*height_error)
+
+        # reward = (
+        #     0.6 * reward_vel +
+        #     0.2 * reward_yaw +
+        #     0.2 * reward_height
+        # )
+
+        # height = self.data.xpos[self.body_id][2]
+        # height_error = height - 0.15
+        # height_reward = np.exp(-100*height_error*height_error)
+
+        velocity = self.data.cvel[self.body_id][3:5]
+        # velocity_error = np.linalg.norm(velocity - [0.1, 0])
+        velocity_error = np.linalg.norm(velocity - [0, 0])
+        velocity_reward = np.exp(-100*velocity_error*velocity_error)
+
+        ang = self.data.cvel[self.body_id][0:3]
+        ang_error = np.linalg.norm(ang - [0, 0, 0])
+        ang_reward = np.exp(-100*ang_error*ang_error)
+
+        pos_error = np.linalg.norm(self.data.xpos[self.body_id][0:2] - [0, 0])
+        pos_reward = np.exp(-0.05*pos_error*pos_error)
+
+        orientation = self.data.xquat[self.body_id]
+        orientation_error = np.linalg.norm(orientation - self._original_orientation)
+        orientation_reward = np.exp(-100*orientation_error*orientation_error)
 
         reward = (
-            0.6 * reward_vel +
-            0.2 * reward_yaw +
-            0.2 * reward_height
+            # 0.6 * velocity_reward +
+            # 0.4 * height_reward +
+            # 0.4 * orientation_reward -
+            # self._robot_steps
         )
         
-        return reward
+        return np.float32(reward)
 
     # modify to define when an episode should end
     def _check_done(self, observation):
@@ -138,101 +185,89 @@ class SimEnv():
         noise_scale = 0.01
         self.data.qpos[:] += self.rng.normal(scale=noise_scale, size=self.data.qpos.shape)
         self.data.qvel[:] += self.rng.normal(scale=noise_scale, size=self.data.qvel.shape)
+        self.data.xquat[self.body_id][:] += self.rng.normal(scale=noise_scale, size=self.data.xquat[self.body_id].shape)
+        self.data.xpos[self.body_id] += self.rng.normal(scale=noise_scale, size=self.data.xpos[self.body_id].shape)
+        self.data.cvel[self.body_id][:] += self.rng.normal(scale=noise_scale, size=self.data.cvel[self.body_id].shape)
 
     def get_dims(self):
         return self.obs_dim, self.action_dim
 
-    def _handle_fps_timing(self, fps=60):
-        pass
+    # stand in demo loop
+    def run_demo(self, policy=None, t=1/60):
+        # Reset environment
+        self._initialise_display()
+        obs = self.reset()
 
-    # implement a parameterised camera
-    # def render_image(self, time=0):
-    #     # VVV ad hoc fix VVV
-    #     if time == None:
-    #         time = 0
-    #     # ^^^ ad hoc fix ^^^
+        # obs_dim, action_dim = self.get_dims()
+        # hidden_dims = (512, 512, 512)
+        # policy = GaitPolicy(obs_dim=obs_dim, action_dim=action_dim, sensor_dim=sensor_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
 
-    #     mujoco.mj_resetData(self.model, self.data)
-    #     mujoco.mj_forward(self.model, self.data)
+        # policy.load_weights()
 
-    #     with mujoco.Renderer(self.model) as renderer:
-    #         while self.data.time < time:
-    #             self.update_control()
-    #             mujoco.mj_step(self.model, self.data)
+        if policy is not None:
+            policy.to(CONFIG.INFER_DEVICE)
 
-    #         renderer.update_scene(self.data)
+        z = [0.1, 0]
 
-    #         return renderer.render()
+        prev_frame_draw = time.time() - t
+        prev_step_time = self.data.time
 
-    # # implement a parameterised camera
-    # def render_video(self, duration=3, framerate=60, camera=None):
-    #     # VVV ad hoc fix VVV
-    #     if duration == None:
-    #         duration = 3
-    #     # ^^^ ad hoc fix ^^^
+        while self.display.running:
+            if policy is not None:
+                concatenated = np.concatenate([obs, z])
+                tensor = torch.from_numpy(concatenated).to(torch.float32)
 
-    #     frames = []
-    #     mujoco.mj_resetData(self.model, self.data)
+                with torch.no_grad():
+                    mean, std = policy(tensor)
 
-    #     with mujoco.Renderer(self.model) as renderer:
-    #         while self.data.time < duration:
-    #             self.update_control()
-    #             mujoco.mj_step(self.model, self.data)
+                dist = Normal(mean, std)
+                action = dist.sample()
 
-    #             if len(frames) < self.data.time * framerate:
-    #                 if camera:
-    #                     renderer.update_scene(self.data, camera=camera)
-    #                 else:
-    #                     renderer.update_scene(self.data)
-    #                 pixels = renderer.render()
-    #                 frames.append(pixels)
+            else:
+                action = torch.as_tensor([0.1,0.1,0.1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5])
+                # action = torch.as_tensor([0,0,0,0,0,0,0,0,0,0,0,0])
+                # action = torch.as_tensor([])
+                # action = torch.as_tensor([
+                    # 0.5, 0.5, 0.5, 0.5,
+                    # 1, 1, 1, 1,
+                    # 0.8, 0.8, 0.8, 0.8
+                    # 0.5, 0.5, 0.5, 0.5,
+                    # 0.5, 0.5, 0.5, 0.5,
+                    # 1, 1, 1, 1
+                    # 0.5, 0.5, 0.5, 0.5,
+                    # 0.35, 0.35, 0.35, 0.35,
+                    # self.data.time*0.3,
+                    # self.data.time*0.3,
+                    # self.data.time*0.3,
+                    # self.data.time*0.3
+                # ])
 
-    #     return frames
+            if not self._stop_step(prev_step_time):
+                obs, reward, done, _ = self.step(action)
 
-    # def load_control(self):
-    #     if self.model_name == "genghis":
-    #     #     self.control = Genghis()
-    #         self.state_variables = np.zeros(1 + 3*3 + (self.model.njnt-1)*2 + 6)
+            # update frame if timing is correct
+            if self._display_next_frame(prev_frame_draw, t=t):
+                # self.renderer.update_scene(self.data, camera="side")
+                self.renderer.update_scene(self.data)
+                img = self.renderer.render()
 
-    #         for i in range(self.model.ngeom):
-    #             # print(self.model.geom_names)
-    #             # if "ground" in self.model.names[i]:
-    #             #     self.ground_id = i
+                self.display.draw_img(img)
+                prev_frame_draw = time.time()
+                prev_step_time = self.data.time
 
-    #             #     break
+            self.display.handle_close()
+            
+            if self.data.time > 3:
+                self.display.quit()
 
-    #     return 0
+    def _display_next_frame(self, prev_frame, t=1/60):
+        return time.time() >= prev_frame + t
 
-    # def get_state_variables(self):
-    #     # state variables: [body height, body theta, body dx/dt, body dtheta/dt, joint theta, joint dtheta/dt, joint contacts with floor]
-    #     body_id = self.model.body("genghis").id
-    #     self.state_variables[0] = self.data.xpos[body_id][2]
-    #     self.state_variables[1:5] = self.data.xquat[body_id]
-    #     self.state_variables[5:11] = self.data.cvel[body_id]
+    # step until the next frame needs to be drawn
+    # step until 
+    def _stop_step(self, prev_step_time, t=1/60):
+        return self.data.time >= prev_step_time + t
 
-    #     for i in range(1, self.model.njnt):
-    #         joint_pos = self.data.joint(i).qpos
-    #         joint_vel = self.data.joint(i).qvel
-    #         # print(f"Joint {i} ({joint_name}) pos: {joint_pos}")
-    #         # print(i)
-    #         self.state_variables[2*3 + 4 + i] = joint_pos
-    #         self.state_variables[2*3 + 4 - 1 + i + self.model.njnt] = joint_vel
-
-    #     # for i in range(self.model.ngeom):
-    #     #     if "leg" in self.model.names[i]:
-                
-
-    #     # print(self.model.njnt)
-
-    #     # print(self.state_variables[1:4])
-    #     # print(self.state_variables)
-
-    # def update_control(self):
-    #     self.get_state_variables()
-
-    #     self.data.ctrl[6] = 45
-    #     self.data.ctrl[7] = 45
-    #     self.data.ctrl[8] = 45
-    #     self.data.ctrl[9] = 45
-    #     self.data.ctrl[10] = 45
-    #     self.data.ctrl[11] = 45
+    def _initialise_display(self):
+        self.renderer = mujoco.Renderer(self.model, width=CONFIG.DISPLAY_W, height=CONFIG.DISPLAY_H)
+        self.display = Display(W=CONFIG.DISPLAY_W, H=CONFIG.DISPLAY_H)
