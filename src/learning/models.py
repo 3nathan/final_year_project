@@ -6,14 +6,6 @@ from util.config import Config
 
 CONFIG = Config()
 
-# this is a latent-conditioned RL policy
-# the latent variable z represents gaits
-#   this could be:
-#       body pose
-#       xdot wrt facing direction
-#       thetadot
-# it outputs an action distribution (joint torgues/target positions)
-
 def construct_linear(input_dim, hidden_dims):
     layers = []
     last_dim = input_dim
@@ -24,6 +16,25 @@ def construct_linear(input_dim, hidden_dims):
         last_dim = curr_dim
 
     return layers
+
+# this is a latent-conditioned RL policy
+# the latent variable z represents gaits
+#   this could be:
+#       body pose
+#       xdot wrt facing direction
+#       thetadot
+# it outputs an action distribution (joint torgues/target positions)
+
+# what is the follower reward function?
+# Option 1: shared task reward (cooperation)
+#       both agents sharing the same communicated goal (may not adhere to project - communication is limited)
+# Option 2: Auxiliary consistence reward
+#       reward follower for producing actions or behaviours that are consistent with the leaders intent
+#       reward reconstruction of leader intent
+#       r_follower += -||predicted_behaviour_from_z - actual_behaviour||
+# Option 3: reward adherence to gait control vector
+#       reward follower for matching gait features and or predicted dynamics
+
 
 class GaitPolicy(nn.Module):
     def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU):
@@ -54,10 +65,25 @@ class GaitPolicy(nn.Module):
         state_dict = torch.load(path, map_location=torch.device('cpu'))
         self.load_state_dict(state_dict)
 
+# this is a variational encoder used for multi-agent gait coordination in RL
+# it encodes input features into a latent variable z for inter-agent communication
+#   z captures gait and policy-relevant information under bandwidth constraints
+# the encoder outputs a latent distribution (mean, std), from which z is sampled or derived
+# z is used by a downstream policy network and shared with another agent
+# optionally:
+#   - a decoder is used to reconstruct input or predict auxiliary signals
+#   - training may include reconstruction loss, KL regularization, and RL reward
+
+# an option for the input features are:
+# 1: VAE input = policy hidden layer
+#       this encodes processed features that drive the 'leader's' decision
+# 2: VAE input = [state + action]
+#       skips the processed features and transmits the infor the 'leader' has without the high level
+#       features that have been computed in the policy hidden layer
+
 class VAE(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dims=(256, 128), latent_dim, activation=nn.LeakyReLU):
         super().__init__()
-        
         encoder_layers = construct_linear(input_dim, hidden_dims)
         decoder_layers = construct_linear(latent_dim, reversed(hidden_dims))
 
@@ -65,10 +91,13 @@ class VAE(nn.Module):
         self.decoder = nn.Sequential(*layers)
 
         self.mean_head = nn.Linear(hidden_dims[-1], latent_dim)
-        self.log_std_head = nn.Linear(hidden_dims[-1]. latent_dim)
+        self.log_std_head = nn.Linear(hidden_dims[-1], latent_dim)
 
         self.output = nn.Linear(hidden_dims[0], output_dim)
 
+    # TODO: investigate whether using deterministic is better
+    #       use deterministic enables outputing the latent vector as the mean and disables
+    #       outputting the latent vector as a sample of a normal distribution
     def forward(self, x):
         x = self.encoder(x)
 
