@@ -151,6 +151,10 @@ class SimEnv():
         velocity_error = np.linalg.norm(velocity - self.latent_control[0:2])
         velocity_reward = np.exp(-100*velocity_error*velocity_error)
 
+        ang = self.data.cvel[self.body_id][2]
+        ang_error = np.linalg.norm(ang - self.latent_control[2])
+        ang_reward = np.exp(-100*ang_error*ang_error)
+
         # ang = self.data.cvel[self.body_id][0:3]
         # ang_error = np.linalg.norm(ang - [0, 0, 0])
         # ang_reward = np.exp(-100*ang_error*ang_error)
@@ -163,9 +167,8 @@ class SimEnv():
         # orientation_reward = np.exp(-100*orientation_error*orientation_error)
 
         reward = (
-            0.6 * velocity_reward +
-            # 0.4 * height_reward +
-            # 0.4 * orientation_reward -
+            velocity_reward +
+            ang_reward -
             self._robot_steps
         )
         
