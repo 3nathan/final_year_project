@@ -82,7 +82,7 @@ class GaitPolicy(nn.Module):
 #       features that have been computed in the policy hidden layer
 
 class VAE(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dims=(256, 128), latent_dim, activation=nn.LeakyReLU):
+    def __init__(self, input_dim, output_dim, latent_dim, hidden_dims=(256, 128), activation=nn.LeakyReLU):
         super().__init__()
         encoder_layers = construct_linear(input_dim, hidden_dims)
         decoder_layers = construct_linear(latent_dim, reversed(hidden_dims))

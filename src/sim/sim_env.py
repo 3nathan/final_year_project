@@ -26,7 +26,7 @@ class SimEnv():
         self.body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'quadruped')
         if self.body_id == -1:
             self.body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'genghis')
-        self.latent_velocity = np.zeros(2)
+        self.latent_control = np.zeros(CONFIG.GENGHIS_CTRL_DIM)
         # hard coded for genghis reward function
 
         self.render_video = video
@@ -148,25 +148,25 @@ class SimEnv():
 
         velocity = self.data.cvel[self.body_id][3:5]
         # velocity_error = np.linalg.norm(velocity - [0.1, 0])
-        velocity_error = np.linalg.norm(velocity - [0, 0])
+        velocity_error = np.linalg.norm(velocity - self.latent_control[0:2])
         velocity_reward = np.exp(-100*velocity_error*velocity_error)
 
-        ang = self.data.cvel[self.body_id][0:3]
-        ang_error = np.linalg.norm(ang - [0, 0, 0])
-        ang_reward = np.exp(-100*ang_error*ang_error)
+        # ang = self.data.cvel[self.body_id][0:3]
+        # ang_error = np.linalg.norm(ang - [0, 0, 0])
+        # ang_reward = np.exp(-100*ang_error*ang_error)
 
-        pos_error = np.linalg.norm(self.data.xpos[self.body_id][0:2] - [0, 0])
-        pos_reward = np.exp(-0.05*pos_error*pos_error)
+        # pos_error = np.linalg.norm(self.data.xpos[self.body_id][0:2] - [0, 0])
+        # pos_reward = np.exp(-0.05*pos_error*pos_error)
 
-        orientation = self.data.xquat[self.body_id]
-        orientation_error = np.linalg.norm(orientation - self._original_orientation)
-        orientation_reward = np.exp(-100*orientation_error*orientation_error)
+        # orientation = self.data.xquat[self.body_id]
+        # orientation_error = np.linalg.norm(orientation - self._original_orientation)
+        # orientation_reward = np.exp(-100*orientation_error*orientation_error)
 
         reward = (
-            # 0.6 * velocity_reward +
+            0.6 * velocity_reward +
             # 0.4 * height_reward +
             # 0.4 * orientation_reward -
-            # self._robot_steps
+            self._robot_steps
         )
         
         return np.float32(reward)
@@ -207,7 +207,7 @@ class SimEnv():
         if policy is not None:
             policy.to(CONFIG.INFER_DEVICE)
 
-        z = [0.1, 0]
+        z = [0.1, 0, 0]
 
         prev_frame_draw = time.time() - t
         prev_step_time = self.data.time

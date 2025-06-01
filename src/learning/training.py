@@ -29,7 +29,8 @@ class ReinforcementLearning():
 
         # obs_dim, action_dim, sensor_dim = self.env.get_dims()
         obs_dim, action_dim = self.env.get_dims()
-        self._latent = self._generate_latent_dist(mu=0, sigma=0.2, size=CONFIG.GENGHIS_CTRL_DIM)
+        # self._latent = self._generate_latent_dist(mu=0, sigma=0.1, size=CONFIG.GENGHIS_CTRL_DIM)
+        self._latent = self._generate_latent_dist(size=CONFIG.GENGHIS_CTRL_DIM)
         hidden_dims = (512, 512, 512)
         # hidden_dims = (400, 300)
         # self.policy = policy(obs_dim=obs_dim, action_dim=action_dim, sensor_dim=sensor_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
@@ -40,7 +41,7 @@ class ReinforcementLearning():
     def run_episode(self): # return log_probs, rewards etc
         z = self._sample_latent_dist()
         # hard coded for genghis reward function
-        self.env.latent_velocity = z
+        self.env.latent_control = z
         # hard coded for genghis reward function
 
         log_probs = []
@@ -151,6 +152,10 @@ class ReinforcementLearning():
             if trajectory % 10 == 0 and self.video:
                 self.env.run_demo(policy=self.policy)
 
+    # loss should be reconstruction loss, and kl divergence
+    # def _vae_loss(mean, std, reconstruction, label):
+        
+
     def _get_input_tensor(*vectors, device=CONFIG.INFER_DEVICE, dtype=torch.float32):
         concatenated = np.concatenate(vectors[1:])
         tensor = torch.from_numpy(concatenated).to(dtype)
@@ -159,10 +164,16 @@ class ReinforcementLearning():
 
     # TODO: change this
     #       should generate x, xdot, theta, thetadot, etc. params
-    def _generate_latent_dist(self, mu, sigma, size):
+    #       
+    #       at the moment it generates:
+    #       [xdot[0], xdot[1], thetadot]
+    # def _generate_latent_dist(self, mu, sigma, size):
+    def _generate_latent_dist(self, size):
         latent = {
-            'means':    np.full(size, mu),
-            'std':      np.full(size, sigma)
+            # 'means':    np.full(size, 0),
+            'means':    np.zeros(size),
+            # 'std':      np.full(size, sigma)
+            'std':      np.array([0.1, 0.05, 0.1])
         }
 
         return latent
@@ -170,8 +181,8 @@ class ReinforcementLearning():
     def _sample_latent_dist(self):
         # TODO: this is only for demo purposes!
         # undo the comment
-        # return np.random.normal(self._latent["means"], self._latent["std"])
-        return np.array([0.1, 0])
+        return np.random.normal(self._latent["means"], self._latent["std"])
+        # return np.array([0.1, 0])
 
     # TODO: change this when an RL algorithm is decided
     def _compute_discounted_rewards(self, rewards, gamma=0.99):
