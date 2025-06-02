@@ -1,6 +1,20 @@
 import argparse
 from pathlib import Path
 
+accepted_strings = {
+    'networks': (
+        'connected', 
+        'split_comm', 
+        'split_no_comm', 
+        'split_encoded_comm'
+    ),
+
+    'algorithms': (
+        'policy_gradient', 
+        'PPO'
+    )
+}
+
 def parse():
     parser = argparse.ArgumentParser(description="A MuJoCo reinforcement learning program")
 
@@ -68,13 +82,11 @@ def check_args(args):
     #         exit(1)
 
     if args.neural_network:
-        networks = ("connected", "split_comm", "split_no_comm", "split_encoded_comm")
-
-        if args.neural_network not in networks:
+        if args.neural_network not in accepted_strings['networks']:
             print(f"Error: {args.neural_network} is not an accepted control network")
             print("Accepted networks:")
 
-            for network in networks:
+            for network in accepted_strings['networks']:
                 print(network)
 
             print("Exiting...")
@@ -84,13 +96,11 @@ def check_args(args):
         args.neural_network = "connected"
 
     if args.algorithm is not None and args.train is True:
-        algorithms = ("policy_gradient", "PPO")
-
-        if args.algorithm not in algorithms:
+        if args.algorithm not in accepted_strings['algorithms']:
             print(f"Error: {args.algorithm} is not an accepted algorithms")
             print("Accepted algorithms:")
 
-            for algorithm in algorithms:
+            for algorithm in accepted_strings['algorithms']:
                 print(algorithm)
 
             print("Exiting...")
