@@ -147,9 +147,17 @@ class SimEnv():
         # height_reward = np.exp(-100*height_error*height_error)
 
         velocity = self.data.cvel[self.body_id][3:5]
+
+        speed = np.linalg.norm(velocity)
+        speed_error = abs(speed - np.linalg.norm(self.latent_control[0:2]))
+        direction = velocity / speed
+        direction_alignment = np.dot(direction, self.data.xmat[self.body_id][0:2])
+        # velocity_error = speed_error * direction_alignment
+        velocity_reward = np.exp(-100*speed_error*speed_error)*direction_alignment
+
         # velocity_error = np.linalg.norm(velocity - [0.1, 0])
-        velocity_error = np.linalg.norm(velocity - self.latent_control[0:2])
-        velocity_reward = np.exp(-100*velocity_error*velocity_error)
+        # velocity_error = np.linalg.norm(velocity - self.latent_control[0:2])
+        # velocity_reward = np.exp(-100*velocity_error*velocity_error)
 
         ang = self.data.cvel[self.body_id][2]
         ang_error = np.linalg.norm(ang - self.latent_control[2])
@@ -168,8 +176,8 @@ class SimEnv():
 
         reward = (
             velocity_reward +
-            ang_reward -
-            self._robot_steps
+            # ang_reward -
+            ang_reward
         )
         
         return np.float32(reward)
@@ -210,7 +218,12 @@ class SimEnv():
         if policy is not None:
             policy.to(CONFIG.INFER_DEVICE)
 
-        z = [0.1, 0, 0]
+        z = [0.1, 0, 0.1]
+        # z = []
+        # for i in range(3):
+        #     print(f"z[{i}]:")
+        #     z_i = input()
+        #     z.append(float(z_i))
 
         prev_frame_draw = time.time() - t
         prev_step_time = self.data.time
