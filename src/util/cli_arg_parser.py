@@ -20,9 +20,13 @@ def parse():
                         action='store_true',
                         help="save neural network weights")
 
+    # parser.add_argument('-n', '--neural_network',
+    #                     type=Path,
+    #                     help="path to load neural network from")
+
     parser.add_argument('-n', '--neural_network',
-                        type=Path,
-                        help="path to load neural network from")
+                        type=str,
+                        help="control network type")
 
     parser.add_argument('-tr', '--trajectories',
                         type=int,
@@ -41,12 +45,11 @@ def parse():
                         help="render video of simulation")
 
     args = parser.parse_args()
-
-    check_syntax(args)
+    check_args(args)
 
     return args
 
-def check_syntax(args):
+def check_args(args):
     if args.model:
         if not args.model.is_file():
             print(f"Error: file not found at {args.model}")
@@ -58,14 +61,30 @@ def check_syntax(args):
         print("Exiting...")
         exit(1)
 
+    # if args.neural_network:
+    #     if not args.neural_network.is_file():
+    #         print(f"Error: file not found at {args.model}")
+    #         print("Exiting...")
+    #         exit(1)
+
     if args.neural_network:
-        if not args.neural_network.is_file():
-            print(f"Error: file not found at {args.model}")
+        networks = ("connected", "split_comm", "split_no_comm", "split_encoded_comm")
+
+        if args.neural_network not in networks:
+            print(f"Error: {args.neural_network} is not an accepted control network")
+            print("Accepted networks:")
+
+            for network in networks:
+                print(network)
+
             print("Exiting...")
             exit(1)
 
+    else:
+        args.neural_network = "connected"
+
     if args.algorithm is not None and args.train is True:
-        algorithms = ["policy_gradient", "PPO"]
+        algorithms = ("policy_gradient", "PPO")
 
         if args.algorithm not in algorithms:
             print(f"Error: {args.algorithm} is not an accepted algorithms")
