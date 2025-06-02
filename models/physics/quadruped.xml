@@ -19,6 +19,7 @@
             <freejoint/>
             <geom name="quadruped_body" type="sphere" size="0.06"/>
 
+            <!-- front -->
             <body name="leg1_seg1" pos="0.06 0 0">
                 <joint name="leg1_yaw" axis="0 0 1" range="-60 60"/>
                 <joint name="leg1_pitch" axis="0 -1 0" range="0 90"/>
@@ -32,6 +33,7 @@
                 </body>
             </body>
 
+            <!-- right -->
             <body name="leg2_seg1" pos="0 0.06 0">
                 <joint name="leg2_yaw" axis="0 0 1" range="-60 60"/>
                 <joint name="leg2_pitch" axis="1 0 0" range="0 90"/>
@@ -45,6 +47,7 @@
                 </body>
             </body>
 
+            <!-- back -->
             <body name="leg3_seg1" pos="-0.06 0 0">
                 <joint name="leg3_yaw" axis="0 0 1" range="-60 60"/>
                 <joint name="leg3_pitch" axis="0 1 0" range="0 90"/>
@@ -58,6 +61,7 @@
                 </body>
             </body>
 
+            <!-- left -->
             <body name="leg4_seg1" pos="0 -0.06 0">
                 <joint name="leg4_yaw" axis="0 0 1" range="-60 60"/>
                 <joint name="leg4_pitch" axis="-1 0 0" range="0 90"/>

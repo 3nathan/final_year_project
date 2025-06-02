@@ -102,29 +102,38 @@
     </worldbody>
 
     <actuator>
-        <!-- pitch -->
-        <position name="leg1_pitch_actuator" joint="leg1_pitch" inheritrange="1"/>
-        <position name="leg2_pitch_actuator" joint="leg2_pitch" inheritrange="1"/>
-        <position name="leg3_pitch_actuator" joint="leg3_pitch" inheritrange="1"/>
-        <position name="leg4_pitch_actuator" joint="leg4_pitch" inheritrange="1"/>
-        <position name="leg5_pitch_actuator" joint="leg5_pitch" inheritrange="1"/>
-        <position name="leg6_pitch_actuator" joint="leg6_pitch" inheritrange="1"/>
+        <!-- right -->
+            <!-- pitch -->
+            <position name="leg1_pitch_actuator" joint="leg1_pitch" inheritrange="1"/>
+            <position name="leg2_pitch_actuator" joint="leg2_pitch" inheritrange="1"/>
+            <position name="leg3_pitch_actuator" joint="leg3_pitch" inheritrange="1"/>
 
-        <!-- yaw -->
-        <position name="leg1_yaw_actuator" joint="leg1_yaw" inheritrange="1"/>
-        <position name="leg2_yaw_actuator" joint="leg2_yaw" inheritrange="1"/>
-        <position name="leg3_yaw_actuator" joint="leg3_yaw" inheritrange="1"/>
-        <position name="leg4_yaw_actuator" joint="leg4_yaw" inheritrange="1"/>
-        <position name="leg5_yaw_actuator" joint="leg5_yaw" inheritrange="1"/>
-        <position name="leg6_yaw_actuator" joint="leg6_yaw" inheritrange="1"/>
+            <!-- yaw -->
+            <position name="leg1_yaw_actuator" joint="leg1_yaw" inheritrange="1"/>
+            <position name="leg2_yaw_actuator" joint="leg2_yaw" inheritrange="1"/>
+            <position name="leg3_yaw_actuator" joint="leg3_yaw" inheritrange="1"/>
+
+        <!-- left -->
+            <!-- pitch -->
+            <position name="leg4_pitch_actuator" joint="leg4_pitch" inheritrange="1"/>
+            <position name="leg5_pitch_actuator" joint="leg5_pitch" inheritrange="1"/>
+            <position name="leg6_pitch_actuator" joint="leg6_pitch" inheritrange="1"/>
+
+            <!-- yaw -->
+            <position name="leg4_yaw_actuator" joint="leg4_yaw" inheritrange="1"/>
+            <position name="leg5_yaw_actuator" joint="leg5_yaw" inheritrange="1"/>
+            <position name="leg6_yaw_actuator" joint="leg6_yaw" inheritrange="1"/>
     </actuator>
 
     <sensor>
-      <touch name="leg1_sensor" site="leg1_site"/>
-      <touch name="leg2_sensor" site="leg2_site"/>
-      <touch name="leg3_sensor" site="leg3_site"/>
-      <touch name="leg4_sensor" site="leg4_site"/>
-      <touch name="leg5_sensor" site="leg5_site"/>
-      <touch name="leg6_sensor" site="leg6_site"/>
+        <!-- right -->
+        <touch name="leg1_sensor" site="leg1_site"/>
+        <touch name="leg2_sensor" site="leg2_site"/>
+        <touch name="leg3_sensor" site="leg3_site"/>
+
+        <!-- left -->
+        <touch name="leg4_sensor" site="leg4_site"/>
+        <touch name="leg5_sensor" site="leg5_site"/>
+        <touch name="leg6_sensor" site="leg6_site"/>
     </sensor>
 </mujoco>
