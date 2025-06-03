@@ -8,8 +8,6 @@ from mujoco import MjModel, MjData
 from sim.display import Display
 from util.config import Config
 
-from learning.models import GaitPolicy
-
 # needed for the reward functionm stuff
 import math
 
@@ -218,7 +216,7 @@ class SimEnv():
         if policy is not None:
             policy.to(CONFIG.INFER_DEVICE)
 
-        z = [0.1, 0, 0.1]
+        z = np.array([0.1, 0, 0.1])
         # z = []
         # for i in range(3):
         #     print(f"z[{i}]:")
@@ -230,11 +228,14 @@ class SimEnv():
 
         while self.display.running:
             if policy is not None:
-                concatenated = np.concatenate([obs, z])
-                tensor = torch.from_numpy(concatenated).to(torch.float32)
+                # concatenated = np.concatenate([obs, z])
+                # tensor = torch.from_numpy(concatenated).to(torch.float32)
+                obs_tensor = torch.from_numpy(obs).to(torch.float32).to(CONFIG.INFER_DEVICE)
+                z_tensor = torch.from_numpy(z).to(torch.float32).to(CONFIG.INFER_DEVICE)
 
                 with torch.no_grad():
-                    mean, std = policy(tensor)
+                    # mean, std, _ = policy(tensor)
+                    mean, std, _ = policy(obs_tensor, z_tensor)
 
                 dist = Normal(mean, std)
                 action = dist.sample()

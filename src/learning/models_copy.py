@@ -54,7 +54,16 @@ class ConnectPolicy(nn.Module):
         self.mean_head = nn.Linear(hidden_dims[-1], action_dim)
         self.log_std_head = nn.Linear(hidden_dims[-1], action_dim)
 
-    def forward(self, x):
+    # def forward(self, x):
+    def forward(self, obs, z):
+        # x = torch.cat((obs, z), dim=0)
+        # print(obs.shape)
+        # print(z.shape)
+        if len(obs.shape) > 1:
+            x = torch.cat((obs, z), dim=1)
+        else:
+            x = torch.cat((obs, z))
+        # print(x.shape)
         x = self.model(x)
 
         mean = torch.sigmoid(self.mean_head(x))
@@ -72,54 +81,55 @@ class ConnectPolicy(nn.Module):
         self.load_state_dict(state_dict)
 
 class SplitPolicy(nn.Module):
-    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU):
+    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), activation=nn.LeakyReLU):
         super().__init__()
 
         print('Using split brain policy')
         self.obs_dim = obs_dim
         self.latent_dim = latent_dim
 
-        self.left = GaitPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
-        self.right = GaitPolicy(obs_dim, 0, action_dim//2, hidden_dims, init_print=False) 
+        self.left = ConnectPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
+        self.right = ConnectPolicy(obs_dim, 0, action_dim//2, hidden_dims, init_print=False) 
 
-    def forward(self, x):
-        if len(x.shape) > 1:
-            obs = x[:, :self.obs_dim]
-            z = x[:, -self.latent_dim:]
+    def forward(self, obs, z):
+        left_mean, left_std, _ = self.left(obs, z)
+        right_mean, right_std, _ = self.right(obs, torch.empty(0, device=obs.device))
+
+        if len(obs.shape) > 1:
+            mean = torch.cat((left_mean, right_mean), dim=1)
+            std = torch.cat((left_std, right_std), dim=1)
         else:
-            obs = x[:self.obs_dim]
-            z = x[-self.latent_dim:]
-
-        left_mean, left_std, _ = self.left(x)
-        right_mean, right_std, _ = self.right(obs)
-
-        mean = torch.cat((left_mean, right_mean), dim=0)
-        std = torch.cat((left_std, right_std), dim=0)
+            mean = torch.cat((left_mean, right_mean), dim=0)
+            std = torch.cat((left_std, right_std), dim=0)
 
         return mean, std, _
 
 class CommPolicy(nn.Module):
-    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(512, 512, 512), activation=nn.LeakyReLU):
+    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), activation=nn.LeakyReLU):
         super().__init__()
 
         print('Using split brain, control vector communicating policy')
         self.obs_dim = obs_dim
         self.latent_dim = latent_dim
 
-        self.left = GaitPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
-        self.right = GaitPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
+        self.left = ConnectPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
+        self.right = ConnectPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
 
-    def forward(self, x):
-        left_mean, left_std, _ = self.left(x)
-        right_mean, right_std, _ = self.right(x)
+    def forward(self, obs, z):
+        left_mean, left_std, _ = self.left(obs, z)
+        right_mean, right_std, _ = self.right(obs, z)
 
-        mean = torch.cat((left_mean, right_mean), dim=0)
-        std = torch.cat((left_std, right_std), dim=0)
+        if len(obs.shape) > 1:
+            mean = torch.cat((left_mean, right_mean), dim=1)
+            std = torch.cat((left_std, right_std), dim=1)
+        else:
+            mean = torch.cat((left_mean, right_mean), dim=0)
+            std = torch.cat((left_std, right_std), dim=0)
 
         return mean, std, _
 
 class EncodePolicy(nn.Module):
-    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(512, 512, 512), encoded_dims=(256, 128, 1), activation=nn.LeakyReLU):
+    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), encoded_dims=(128, 64, 1), activation=nn.LeakyReLU):
         super().__init__()
 
         print('Using split brain, encoded communication policy')
@@ -127,22 +137,24 @@ class EncodePolicy(nn.Module):
         self.obs_dim = obs_dim
         self.latent_dim = latent_dim
 
-        self.left = GaitPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
-        self.right = GaitPolicy(obs_dim, encoded_dims[-1], action_dim//2, hidden_dims, init_print=False) 
+        self.left = ConnectPolicy(obs_dim, latent_dim, action_dim//2, hidden_dims, init_print=False) 
+        self.right = ConnectPolicy(obs_dim, encoded_dims[-1], action_dim//2, hidden_dims, init_print=False) 
 
         layers = construct_linear(hidden_dims[-1], encoded_dims)
         self.encoder = nn.Sequential(*layers)
 
-    def forward(self, x):
-        obs = x[:self.obs_dim]
-
-        left_mean, left_std, high_lvl_features = self.left(x)
+    def forward(self, obs, z):
+        left_mean, left_std, high_lvl_features = self.left(obs, z)
 
         encoded = self.encoder(high_lvl_features)
-        right_mean, right_std, _ = self.right(torch.cat((obs, encoded), dim=0))
+        right_mean, right_std, _ = self.right(obs, encoded)
 
-        mean = torch.cat((left_mean, right_mean), dim=0)
-        std = torch.cat((left_std, right_std), dim=0)
+        if len(obs.shape) > 1:
+            mean = torch.cat((left_mean, right_mean), dim=1)
+            std = torch.cat((left_std, right_std), dim=1)
+        else:
+            mean = torch.cat((left_mean, right_mean), dim=0)
+            std = torch.cat((left_std, right_std), dim=0)
 
         return mean, std, _
 

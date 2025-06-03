@@ -6,7 +6,7 @@ import torch.functional as F
 from torch.distributions import Normal
 
 from sim.sim_env import SimEnv
-from learning.models import ConnectPolicy
+from learning.models_copy import ConnectPolicy
 
 from util.config import Config
 from util.functions import Logger
@@ -53,11 +53,15 @@ class ReinforcementLearning():
         done = False
         episode_reward = 0
 
+        # z = torch.from_numpy(z).to(torch.float32).to(CONFIG.INFER_DEVICE)
         while not done:
-            input_tensor = self._get_input_tensor(observation, z)
-            input_tensor = input_tensor.to(CONFIG.INFER_DEVICE)
+            # input_tensor = self._get_input_tensor(observation, z)
+            # input_tensor = input_tensor.to(CONFIG.INFER_DEVICE)
+            obs_tensor = torch.from_numpy(observation).to(torch.float32).to(CONFIG.INFER_DEVICE)
+            z_tensor = torch.from_numpy(z).to(torch.float32).to(CONFIG.INFER_DEVICE)
 
-            mean, std, _ = self.policy(input_tensor)
+            # mean, std, _ = self.policy(input_tensor)
+            mean, std, _ = self.policy(obs_tensor, z_tensor)
             dist = Normal(mean, std)
             action = dist.sample()
             log_prob = dist.log_prob(action).sum()
@@ -66,7 +70,9 @@ class ReinforcementLearning():
             
             log_probs.append(log_prob)
             rewards.append(reward)
-            states.append(input_tensor.cpu())
+            # states.append(input_tensor.cpu())
+            # states.append((obs.cpu(), z.cpu()))
+            states.append((obs_tensor.cpu(), z_tensor.cpu()))
             actions.append(action.cpu())
 
             episode_reward += reward
@@ -119,13 +125,16 @@ class ReinforcementLearning():
             
             log_probs_tensor = torch.stack(all_log_probs).to(CONFIG.TRAIN_DEVICE)
             returns_tensor = torch.tensor(all_returns, dtype=torch.float32).to(CONFIG.TRAIN_DEVICE)
-            states_tensor = torch.stack(all_states).to(CONFIG.TRAIN_DEVICE)
+            # states_tensor = torch.stack(all_states).to(CONFIG.TRAIN_DEVICE)
+            obs_tensor = torch.stack([state[0] for state in all_states]).to(CONFIG.TRAIN_DEVICE)
+            z_tensor = torch.stack([state[1] for state in all_states]).to(CONFIG.TRAIN_DEVICE)
             actions_tensor = torch.stack(all_actions).to(CONFIG.TRAIN_DEVICE)
 
             old_log_probs = log_probs_tensor.detach().clone()
 
             for epoch in range(epochs):
-                mean, std, _ = self.policy(states_tensor)
+                # mean, std, _ = self.policy(states_tensor[:][0], states_tensor[:][1])
+                mean, std, _ = self.policy(obs_tensor, z_tensor)
                 dist = Normal(mean, std)
                 new_log_probs = dist.log_prob(actions_tensor).sum(dim=1)
 

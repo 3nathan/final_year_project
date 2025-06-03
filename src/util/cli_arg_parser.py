@@ -3,10 +3,10 @@ from pathlib import Path
 
 accepted_strings = {
     'networks': (
-        'connected', 
-        'split_comm', 
-        'split_no_comm', 
-        'split_encoded_comm'
+        'connect', 
+        'split',
+        'comm', 
+        'encode'
     ),
 
     'algorithms': (

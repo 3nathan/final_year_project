@@ -9,8 +9,12 @@ from pathlib import Path
 from sim.sim_env import SimEnv
 
 # machine learning modules
-from learning.training import ReinforcementLearning
-from learning.models import GaitPolicy
+from learning.models_copy import ConnectPolicy
+from learning.models_copy import SplitPolicy
+from learning.models_copy import CommPolicy
+from learning.models_copy import EncodePolicy
+# from learning.training import ReinforcementLearning
+from learning.training_copy import ReinforcementLearning
 
 from util.config import Config
 
@@ -18,10 +22,22 @@ CONFIG = Config()
 
 def main():
     args = parse()
+
     if args.train is True:
         print("Training RL model")
 
-        model = ReinforcementLearning(str(args.model), save=args.save, video=args.video)
+        if args.neural_network == 'connect':
+            policy = ConnectPolicy
+        elif args.neural_network == 'split':
+            policy = SplitPolicy
+        elif args.neural_network == 'comm':
+            policy = CommPolicy
+        elif args.neural_network == 'encode':
+            policy = EncodePolicy
+        else:
+            policy = ConnectPolicy
+
+        model = ReinforcementLearning(str(args.model), policy=policy, save=args.save, video=args.video)
         model.train(algorithm=args.algorithm, trajectories=args.trajectories, batch_size=args.batch_size, epochs=args.epochs)
 
     elif args.video is True:

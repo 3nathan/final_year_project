@@ -15,7 +15,8 @@ class Config():
         )
         self.INFER_DEVICE = torch.device("cpu")
         self.EPISODE_DURATION = 10
-        self.LOG_INTERVAL = 5
+        self.LOG_INTERVAL = 1
+        self.TRAJECTORIES = 1000
         self.BATCH_SIZE = 15
         self.EPOCHS = 10
         self.LR = 3e-4  # prev: 3e-4
