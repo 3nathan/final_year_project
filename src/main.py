@@ -43,17 +43,7 @@ def main():
     elif args.video is True:
         env = SimEnv(str(args.model), video=True)
 
-        if args.neural_network:
-            obs_dim, action_dim = env.get_dims()
-            hidden_dims = (512, 512, 512)
-            policy = GaitPolicy(obs_dim=obs_dim, action_dim=action_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
-            policy.load_weights(str(args.neural_network))
-
-        else:
-            policy = None
-
         print("Demoing simulation")
-
         env.run_demo(policy=policy)
 
 if __name__ == '__main__':

@@ -1,0 +1,76 @@
+Training RL model
+Loading MuJoCo model: models/physics/genghis.xml into the simulation environment
+Simulation environment initialised
+Using split brain, control vector communicating policy
+Training on mps
+Using PPO
+1000 trajectories
+15 episodes per trajectory
+10 epochs per training batch
+Trajectory      Reward    
+0               292.40176 
+1               352.6856  
+2               262.08994 
+3               377.1353  
+4               365.05878 
+5               394.4178  
+6               325.76437 
+7               355.74933 
+8               311.07596 
+9               343.91003 
+10              386.7966  
+11              384.0348  
+12              407.6492  
+13              297.5636  
+14              356.5711  
+15              401.25302 
+16              367.35712 
+17              357.17548 
+18              301.57098 
+19              286.24408 
+20              440.14838 
+21              325.6474  
+22              321.84018 
+23              362.10565 
+24              390.27396 
+25              415.59143 
+26              336.7261  
+27              411.46466 
+28              397.624   
+29              390.251   
+30              440.7018  
+31              321.93735 
+32              344.19675 
+33              310.21957 
+34              333.04266 
+35              451.36826 
+36              387.33685 
+37              386.21063 
+38              362.18597 
+39              379.05896 
+40              467.4981  
+41              410.30878 
+42              459.78156 
+43              364.2774  
+44              398.05334 
+45              473.012   
+46              466.59863 
+47              378.67734 
+48              449.3135  
+49              372.1872  
+50              420.46838 
+51              453.21317 
+52              390.85715 
+53              398.3461  
+^CTraceback (most recent call last):
+  File "/Users/nathan/Library/CloudStorage/OneDrive-ImperialCollegeLondon/fourth_year/fyp/codebase/src/ma
+in.py", line 60, in <module>
+    main()
+  File "/Users/nathan/Library/CloudStorage/OneDrive-ImperialCollegeLondon/fourth_year/fyp/codebase/src/ma
+in.py", line 41, in main
+    model.train(algorithm=args.algorithm, trajectories=args.trajectories, batch_size=args.batch_size, epo
+chs=args.epochs)
+  File "/Users/nathan/Library/CloudStorage/OneDrive-ImperialCollegeLondon/fourth_year/fyp/codebase/src/le
+arning/training_copy.py", line 127, in train
+    returns_tensor = torch.tensor(all_returns, dtype=torch.float32).to(CONFIG.TRAIN_DEVICE)
+KeyboardInterrupt

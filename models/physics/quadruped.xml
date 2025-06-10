@@ -90,18 +90,23 @@
     </contact>
 
     <actuator>
+        <!-- front right -->
         <position joint="leg1_yaw" inheritrange="1"/>
         <position joint="leg2_yaw" inheritrange="1"/>
-        <position joint="leg3_yaw" inheritrange="1"/>
-        <position joint="leg4_yaw" inheritrange="1"/>
 
         <position joint="leg1_pitch" inheritrange="1"/>
         <position joint="leg2_pitch" inheritrange="1"/>
-        <position joint="leg3_pitch" inheritrange="1"/>
-        <position joint="leg4_pitch" inheritrange="1"/>
 
         <position joint="leg1_knee" inheritrange="1"/>
         <position joint="leg2_knee" inheritrange="1"/>
+
+        <!-- back left -->
+        <position joint="leg3_yaw" inheritrange="1"/>
+        <position joint="leg4_yaw" inheritrange="1"/>
+
+        <position joint="leg3_pitch" inheritrange="1"/>
+        <position joint="leg4_pitch" inheritrange="1"/>
+
         <position joint="leg3_knee" inheritrange="1"/>
         <position joint="leg4_knee" inheritrange="1"/>
     </actuator>

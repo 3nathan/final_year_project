@@ -200,3 +200,40 @@ class EncodePolicy(nn.Module):
     # TODO: investigate whether using deterministic is better
     #       use deterministic enables outputing the latent vector as the mean and disables
     #       outputting the latent vector as a sample of a normal distribution
+
+class SplitFromConnectPolicy(nn.Module):
+    def __init__(self, pretrained_policy, obs_dim, latent_dim, action_dim):
+        super().__init__()
+
+        print("Splitting trained ConnectPolicy")
+
+        # Copy original shared layers
+        shared_layers = list(pretrained_policy.model.children())
+        self.shared = nn.Sequential(*shared_layers)
+
+        # Create left/right heads
+        self.left_mean = nn.Linear(shared_layers[-2].out_features, action_dim // 2)
+        self.left_log_std = nn.Linear(shared_layers[-2].out_features, action_dim // 2)
+
+        self.right_mean = nn.Linear(shared_layers[-2].out_features, action_dim // 2)
+        self.right_log_std = nn.Linear(shared_layers[-2].out_features, action_dim // 2)
+
+        # Copy weights from original head
+        self.left_mean.weight.data.copy_(pretrained_policy.mean_head.weight.data[:action_dim//2])
+        self.left_log_std.weight.data.copy_(pretrained_policy.log_std_head.weight.data[:action_dim//2])
+
+        self.right_mean.weight.data.copy_(pretrained_policy.mean_head.weight.data[action_dim//2:])
+        self.right_log_std.weight.data.copy_(pretrained_policy.log_std_head.weight.data[action_dim//2:])
+
+    def forward(self, x):
+        feat = self.shared(x)
+        left_mean = self.left_mean(feat)
+        left_std = torch.exp(torch.clamp(self.left_log_std(feat), -20, 2))
+
+        right_mean = self.right_mean(feat)
+        right_std = torch.exp(torch.clamp(self.right_log_std(feat), -20, 2))
+
+        mean = torch.cat([left_mean, right_mean], dim=-1)
+        std = torch.cat([left_std, right_std], dim=-1)
+
+        return mean, std, feat

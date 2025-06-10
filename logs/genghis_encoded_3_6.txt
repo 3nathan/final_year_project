@@ -1,0 +1,89 @@
+Training RL model
+Loading MuJoCo model: models/physics/genghis.xml into the simulation environment
+Simulation environment initialised
+Using split brain, encoded communication policy
+with a 3 dimensional high-level feature encoding
+Training on cuda
+Using PPO
+1000 trajectories
+15 episodes per trajectory
+10 epochs per training batch
+Trajectory	Reward    
+0         	336.39197 
+1         	314.89795 
+2         	397.47894 
+3         	310.4662  
+4         	367.81613 
+5         	335.5327  
+6         	379.01233 
+7         	403.8289  
+8         	359.61627 
+9         	335.17932 
+10        	284.62244 
+11        	358.5695  
+12        	348.00748 
+13        	374.8303  
+14        	399.6476  
+15        	357.26935 
+16        	369.16214 
+17        	371.83624 
+18        	451.1677  
+19        	405.14166 
+20        	353.67056 
+21        	399.45807 
+22        	377.29044 
+23        	380.6049  
+24        	394.60825 
+25        	461.30286 
+26        	393.4645  
+27        	382.91608 
+28        	410.47064 
+29        	458.9236  
+30        	368.91306 
+31        	459.27914 
+32        	311.47824 
+33        	416.7799  
+34        	422.56036 
+35        	391.8316  
+36        	353.968   
+37        	407.08017 
+38        	353.15887 
+39        	448.74173 
+40        	348.68713 
+41        	543.68665 
+42        	307.70453 
+43        	462.3614  
+44        	420.84384 
+45        	429.74472 
+46        	460.4536  
+47        	436.85306 
+48        	353.21234 
+49        	426.11673 
+50        	402.90976 
+51        	429.58197 
+52        	343.4014  
+53        	516.05804 
+54        	460.24124 
+55        	441.56732 
+56        	444.33704 
+57        	448.35242 
+58        	450.75598 
+59        	386.86932 
+60        	453.2746  
+61        	452.13345 
+62        	481.63242 
+63        	400.34583 
+64        	455.7833  
+65        	347.432   
+66        	460.48117 
+67        	445.81213 
+68        	481.12006 
+69        	475.51672 
+70        	493.6042  
+71        	419.52347 
+72        	570.10834 
+73        	414.68015 
+74        	497.66425 
+Connection to gpucluster2.doc.ic.ac.uk closed by remote host.
+Connection to gpucluster2.doc.ic.ac.uk closed.
+client_loop: send disconnect: Broken pipe

@@ -18,10 +18,11 @@ class Config():
         self.LOG_INTERVAL = 1
         self.TRAJECTORIES = 1000
         self.BATCH_SIZE = 15
-        self.EPOCHS = 10
+        self.EPOCHS = 5
         self.LR = 3e-4  # prev: 3e-4
         self.EPSILON = 0.2
         self.SAVE_INTERVAL = 10
+        self.Z_UPDATES = 3
 
         # Machine configs
         self.USING_MAC = platform.system() == "Darwin"

@@ -29,12 +29,6 @@ class Display(object):
             self.handle_close()
             self.draw_img(frame)
             time.sleep(t)
-    
-    # def __blit_surface__(self, img):
-    #     pygame.surfarray.blit_array(self.surface, img.swapaxes(0,1))
-    #     self.screen.blit(self.surface, (0,0))
-
-    #     pygame.display.flip()
 
     def handle_close(self):
         for event in pygame.event.get():

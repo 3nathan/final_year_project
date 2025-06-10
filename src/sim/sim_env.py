@@ -52,8 +52,6 @@ class SimEnv():
         action = action.detach().cpu().numpy()
         action_clipped = np.clip(action, 0, 1)
         action_scaled = action_clipped * (self.model.actuator_ctrlrange[:, 1] - self.model.actuator_ctrlrange[:, 0]) + self.model.actuator_ctrlrange[:, 0]
-        # print(f"time: {self.data.time}")
-        # print(action_scaled)
         self.data.ctrl[:] = action_scaled
 
         mujoco.mj_step(self.model, self.data)
@@ -61,18 +59,12 @@ class SimEnv():
         reward = self._compute_reward(observation, action)
         done = self._check_done(observation)
 
-        # info dictionary can include diagnostic data
         info = {}
 
         return observation, reward, done, info
 
     def reset(self):
         mujoco.mj_resetData(self.model, self.data)
-        # hard coded for genghis reward function
-        self.R = self.data.xmat[self.body_id].reshape(3, 3)
-        self.initial_height = 0.1
-        self.initial_yaw = math.atan2(self.R[1, 0], self.R[0, 0])
-        # hard coded for genghis reward function
         self._apply_reset_noise()
         return self._get_obs()
 
@@ -147,11 +139,12 @@ class SimEnv():
         velocity = self.data.cvel[self.body_id][3:5]
 
         speed = np.linalg.norm(velocity)
-        speed_error = abs(speed - np.linalg.norm(self.latent_control[0:2]))
+        speed_error = speed - np.linalg.norm(self.latent_control[0:2])
+        speed_reward = np.exp(-100*speed_error*speed_error)
+
         direction = velocity / speed
-        direction_alignment = np.dot(direction, self.data.xmat[self.body_id][0:2])
-        # velocity_error = speed_error * direction_alignment
-        velocity_reward = np.exp(-100*speed_error*speed_error)*direction_alignment
+        direction_alignment = np.dot(direction, self.data.xmat[self.body_id][0:2])-1
+        direction_reward = np.exp(-100*direction_alignment*direction_alignment)
 
         # velocity_error = np.linalg.norm(velocity - [0.1, 0])
         # velocity_error = np.linalg.norm(velocity - self.latent_control[0:2])
@@ -172,9 +165,11 @@ class SimEnv():
         # orientation_error = np.linalg.norm(orientation - self._original_orientation)
         # orientation_reward = np.exp(-100*orientation_error*orientation_error)
 
+        # print(velocity_reward)
+        # print(ang_reward)
         reward = (
-            velocity_reward +
-            # ang_reward -
+            speed_reward +
+            direction_reward +
             ang_reward
         )
         
@@ -207,21 +202,10 @@ class SimEnv():
         self._initialise_display()
         obs = self.reset()
 
-        # obs_dim, action_dim = self.get_dims()
-        # hidden_dims = (512, 512, 512)
-        # policy = GaitPolicy(obs_dim=obs_dim, action_dim=action_dim, sensor_dim=sensor_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
-
-        # policy.load_weights()
-
         if policy is not None:
             policy.to(CONFIG.INFER_DEVICE)
 
-        z = np.array([0.1, 0, 0.1])
-        # z = []
-        # for i in range(3):
-        #     print(f"z[{i}]:")
-        #     z_i = input()
-        #     z.append(float(z_i))
+        z = np.array([0.3, 0, 0])
 
         prev_frame_draw = time.time() - t
         prev_step_time = self.data.time
@@ -262,7 +246,6 @@ class SimEnv():
             if not self._stop_step(prev_step_time):
                 obs, reward, done, _ = self.step(action)
 
-            # update frame if timing is correct
             if self._display_next_frame(prev_frame_draw, t=t):
                 # self.renderer.update_scene(self.data, camera="side")
                 self.renderer.update_scene(self.data)
@@ -280,8 +263,6 @@ class SimEnv():
     def _display_next_frame(self, prev_frame, t=1/60):
         return time.time() >= prev_frame + t
 
-    # step until the next frame needs to be drawn
-    # step until 
     def _stop_step(self, prev_step_time, t=1/60):
         return self.data.time >= prev_step_time + t
 

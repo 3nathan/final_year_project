@@ -15,34 +15,22 @@ import sys
 
 CONFIG = Config()
 
-# using:
-# https://pytorch.org/tutorials/intermediate/reinforcement_ppo.html#value-network
-
-# most of this is using this code:
-# https://www.geeksforgeeks.org/reinforcement-learning-using-pytorch/
-
 class ReinforcementLearning():
     def __init__(self, model_path, policy=ConnectPolicy, seed=None, save=False, video=False):
         self.env = SimEnv(model_path=model_path, seed=seed, video=video)
         self.save = save
         self.video = video
 
-        # obs_dim, action_dim, sensor_dim = self.env.get_dims()
         obs_dim, action_dim = self.env.get_dims()
-        # self._latent = self._generate_latent_dist(mu=0, sigma=0.1, size=CONFIG.GENGHIS_CTRL_DIM)
         self._latent = self._generate_latent_dist(size=CONFIG.GENGHIS_CTRL_DIM)
         hidden_dims = (512, 512, 512)
-        # hidden_dims = (400, 300)
-        # self.policy = policy(obs_dim=obs_dim, action_dim=action_dim, sensor_dim=sensor_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, hidden_dims=hidden_dims)
         self.policy = policy(obs_dim=obs_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, action_dim=action_dim, hidden_dims=hidden_dims)
 
         print(f"Training on {CONFIG.TRAIN_DEVICE}")
 
     def run_episode(self): # return log_probs, rewards etc
-        z = self._sample_latent_dist()
-        # hard coded for genghis reward function
-        self.env.latent_control = z
-        # hard coded for genghis reward function
+        N = CONFIG.EPISODE_DURATION / self.env.model.opt.timestep
+        z_update_interval = np.linspace(0, N, num=CONFIG.Z_UPDATES, endpoint=False, dtype=int)
 
         log_probs = []
         rewards = []
@@ -53,10 +41,11 @@ class ReinforcementLearning():
         done = False
         episode_reward = 0
 
-        # z = torch.from_numpy(z).to(torch.float32).to(CONFIG.INFER_DEVICE)
+        step = 0
         while not done:
-            # input_tensor = self._get_input_tensor(observation, z)
-            # input_tensor = input_tensor.to(CONFIG.INFER_DEVICE)
+            if step in z_update_interval:
+                z = self._sample_latent_dist()
+                self.env.latent_control = z
             obs_tensor = torch.from_numpy(observation).to(torch.float32).to(CONFIG.INFER_DEVICE)
             z_tensor = torch.from_numpy(z).to(torch.float32).to(CONFIG.INFER_DEVICE)
 
@@ -71,11 +60,11 @@ class ReinforcementLearning():
             log_probs.append(log_prob)
             rewards.append(reward)
             # states.append(input_tensor.cpu())
-            # states.append((obs.cpu(), z.cpu()))
             states.append((obs_tensor.cpu(), z_tensor.cpu()))
             actions.append(action.cpu())
 
             episode_reward += reward
+            step += 1
 
         returns = self._compute_discounted_rewards(rewards)
 
@@ -133,7 +122,6 @@ class ReinforcementLearning():
             old_log_probs = log_probs_tensor.detach().clone()
 
             for epoch in range(epochs):
-                # mean, std, _ = self.policy(states_tensor[:][0], states_tensor[:][1])
                 mean, std, _ = self.policy(obs_tensor, z_tensor)
                 dist = Normal(mean, std)
                 new_log_probs = dist.log_prob(actions_tensor).sum(dim=1)
@@ -161,10 +149,6 @@ class ReinforcementLearning():
             if trajectory % 10 == 0 and self.video:
                 self.env.run_demo(policy=self.policy)
 
-    # loss should be reconstruction loss, and kl divergence
-    # def _vae_loss(mean, std, reconstruction, label):
-        
-
     def _get_input_tensor(*vectors, device=CONFIG.INFER_DEVICE, dtype=torch.float32):
         concatenated = np.concatenate(vectors[1:])
         tensor = torch.from_numpy(concatenated).to(dtype)
@@ -179,19 +163,14 @@ class ReinforcementLearning():
     # def _generate_latent_dist(self, mu, sigma, size):
     def _generate_latent_dist(self, size):
         latent = {
-            # 'means':    np.full(size, 0),
             'means':    np.zeros(size),
-            # 'std':      np.full(size, sigma)
             'std':      np.array([0.1, 0.05, 0.1])
         }
 
         return latent
 
     def _sample_latent_dist(self):
-        # TODO: this is only for demo purposes!
-        # undo the comment
         return np.random.normal(self._latent["means"], self._latent["std"])
-        # return np.array([0.1, 0])
 
     # TODO: change this when an RL algorithm is decided
     def _compute_discounted_rewards(self, rewards, gamma=0.99):

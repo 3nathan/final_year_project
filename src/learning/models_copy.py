@@ -13,6 +13,7 @@ def construct_linear(input_dim, hidden_dims):
         layers.append(nn.Linear(last_dim, curr_dim))
         layers.append(nn.LayerNorm(curr_dim))
         layers.append(nn.LeakyReLU(0.1))
+        # layers.append(nn.ReLU())
         last_dim = curr_dim
 
     return layers
@@ -56,14 +57,10 @@ class ConnectPolicy(nn.Module):
 
     # def forward(self, x):
     def forward(self, obs, z):
-        # x = torch.cat((obs, z), dim=0)
-        # print(obs.shape)
-        # print(z.shape)
         if len(obs.shape) > 1:
             x = torch.cat((obs, z), dim=1)
         else:
             x = torch.cat((obs, z))
-        # print(x.shape)
         x = self.model(x)
 
         mean = torch.sigmoid(self.mean_head(x))
@@ -129,7 +126,7 @@ class CommPolicy(nn.Module):
         return mean, std, _
 
 class EncodePolicy(nn.Module):
-    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), encoded_dims=(128, 64, 1), activation=nn.LeakyReLU):
+    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), encoded_dims=(128, 64, 3), activation=nn.LeakyReLU):
         super().__init__()
 
         print('Using split brain, encoded communication policy')
