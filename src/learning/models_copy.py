@@ -126,7 +126,7 @@ class CommPolicy(nn.Module):
         return mean, std, _
 
 class EncodePolicy(nn.Module):
-    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), encoded_dims=(128, 64, 3), activation=nn.LeakyReLU):
+    def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), encoded_dims=(64, 3), activation=nn.LeakyReLU):
         super().__init__()
 
         print('Using split brain, encoded communication policy')
@@ -171,40 +171,40 @@ class EncodePolicy(nn.Module):
 #       skips the processed features and transmits the infor the 'leader' has without the high level
 #       features that have been computed in the policy hidden layer
 
-# class VAE(nn.Module):
-#     def __init__(self, input_dim, output_dim, latent_dim, hidden_dims=(256, 128), activation=nn.LeakyReLU):
-#         super().__init__()
-#         encoder_layers = construct_linear(input_dim, hidden_dims)
-#         decoder_layers = construct_linear(latent_dim, reversed(hidden_dims) + (output_dim,))
+class VAE(nn.Module):
+    def __init__(self, input_dim, output_dim, latent_dim, hidden_dims=(256, 128), activation=nn.LeakyReLU):
+        super().__init__()
+        encoder_layers = construct_linear(input_dim, hidden_dims)
+        decoder_layers = construct_linear(latent_dim, reversed(hidden_dims) + (output_dim,))
 
-#         self.encoder = nn.Sequential(*layers)
-#         self.decoder = nn.Sequential(*layers)
+        self.encoder = nn.Sequential(*layers)
+        self.decoder = nn.Sequential(*layers)
 
-#         self.mean_head = nn.Linear(hidden_dims[-1], latent_dim)
-#         self.log_var_head = nn.Linear(hidden_dims[-1], latent_dim)
+        self.mean_head = nn.Linear(hidden_dims[-1], latent_dim)
+        self.log_var_head = nn.Linear(hidden_dims[-1], latent_dim)
 
-#     def encode(self, x):
-#         x = self.encoder(x)
+    def encode(self, x):
+        x = self.encoder(x)
         
-#         mean = self.mean_head(x)
-#         log_var = self.log_var_head(x)
-#         # log_var = torch.clamp(log_var, min=-20, max=2)
+        mean = self.mean_head(x)
+        log_var = self.log_var_head(x)
+        # log_var = torch.clamp(log_var, min=-20, max=2)
 
-#         return mean, log_var
+        return mean, log_var
 
-#     def reparameterise(self, mean, log_var):
-#         std = torch.exp(0.5*log_var)
-#         return Normal(mean, std).sample()
+    def reparameterise(self, mean, log_var):
+        std = torch.exp(0.5*log_var)
+        return Normal(mean, std).sample()
 
-#     def decode(self, z):
-#         return self.decoder(z)
+    def decode(self, z):
+        return self.decoder(z)
 
-#     def forward(self, x):
-#         mean, log_var = self.encode(x)
-#         z = self.reparameterise(mean, log_var)
-#         recon = self.decoder(z)
+    def forward(self, x):
+        mean, log_var = self.encode(x)
+        z = self.reparameterise(mean, log_var)
+        recon = self.decoder(z)
 
-#         return recon, mean, log_var
+        return recon, mean, log_var
 
     # TODO: investigate whether using deterministic is better
     #       use deterministic enables outputing the latent vector as the mean and disables
