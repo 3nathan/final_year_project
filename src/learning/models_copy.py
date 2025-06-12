@@ -70,7 +70,7 @@ class ConnectPolicy(nn.Module):
 
         return mean, std, x
 
-    def save_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/quadruped.pth"):
+    def save_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/genghis.pth"):
         torch.save(self.state_dict(), path)
 
     def load_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/quadruped.pth"):
@@ -100,6 +100,27 @@ class SplitPolicy(nn.Module):
             std = torch.cat((left_std, right_std), dim=0)
 
         return mean, std, _
+
+    def split_weights(connect_policy, split_policy):
+        # Copy encoder weights (assuming same architecture)
+        split_policy.left.model.load_state_dict(connect_policy.model.state_dict())
+        split_policy.right.model.load_state_dict(connect_policy.model.state_dict())
+    
+        # Split mean and std heads
+        with torch.no_grad():
+            # Mean head
+            split_policy.left.mean_head.weight.copy_(connect_policy.mean_head.weight[:split_policy.left.mean_head.out_features])
+            split_policy.left.mean_head.bias.copy_(connect_policy.mean_head.bias[:split_policy.left.mean_head.out_features])
+    
+            split_policy.right.mean_head.weight.copy_(connect_policy.mean_head.weight[split_policy.left.mean_head.out_features:])
+            split_policy.right.mean_head.bias.copy_(connect_policy.mean_head.bias[split_policy.left.mean_head.out_features:])
+    
+            # Log std head
+            split_policy.left.log_std_head.weight.copy_(connect_policy.log_std_head.weight[:split_policy.left.log_std_head.out_features])
+            split_policy.left.log_std_head.bias.copy_(connect_policy.log_std_head.bias[:split_policy.left.log_std_head.out_features])
+    
+            split_policy.right.log_std_head.weight.copy_(connect_policy.log_std_head.weight[split_policy.left.log_std_head.out_features:])
+            split_policy.right.log_std_head.bias.copy_(connect_policy.log_std_head.bias[split_policy.left.log_std_head.out_features:])
 
 class CommPolicy(nn.Module):
     def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), activation=nn.LeakyReLU):

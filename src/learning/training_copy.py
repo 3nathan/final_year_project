@@ -93,6 +93,8 @@ class ReinforcementLearning():
 
         logger = Logger(["Trajectory", "Reward"])
 
+        max_reward = 0
+
         for trajectory in range(trajectories):
             self.policy.to(CONFIG.INFER_DEVICE)
 
@@ -145,6 +147,9 @@ class ReinforcementLearning():
                 optimiser.step()
 
             logger.log([trajectory, total_reward / batch_size])
+
+            if self.save and total_reward > max_reward:
+                self.policy.save_weights()
 
             if trajectory % 10 == 0 and self.video:
                 self.env.run_demo(policy=self.policy)
