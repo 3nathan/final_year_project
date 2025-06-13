@@ -23,8 +23,7 @@ class ReinforcementLearning():
 
         obs_dim, action_dim = self.env.get_dims()
         self._latent = self._generate_latent_dist(size=CONFIG.GENGHIS_CTRL_DIM)
-        hidden_dims = (128, 128)
-        self.policy = policy(obs_dim=obs_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, action_dim=action_dim, hidden_dims=hidden_dims)
+        self.policy = policy(obs_dim=obs_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, action_dim=action_dim, hidden_dims=CONFIG.HIDDEN_DIMS)
 
         print(f"Training on {CONFIG.TRAIN_DEVICE}")
 

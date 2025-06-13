@@ -73,7 +73,7 @@ class ConnectPolicy(nn.Module):
     def save_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/genghis.pth"):
         torch.save(self.state_dict(), path)
 
-    def load_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/quadruped.pth"):
+    def load_weights(self, path=str(CONFIG.ROOT)+"/models/neural_networks/genghis.pth"):
         state_dict = torch.load(path, map_location=torch.device('cpu'))
         self.load_state_dict(state_dict)
 
@@ -101,26 +101,62 @@ class SplitPolicy(nn.Module):
 
         return mean, std, _
 
-    def split_weights(connect_policy, split_policy):
-        # Copy encoder weights (assuming same architecture)
+def split_weights(connect_policy, split_policy):
+    # Extract obs and latent dims
+    obs_dim = connect_policy.obs_dim
+    latent_dim = connect_policy.latent_dim
+
+    with torch.no_grad():
+        # === Copy over left model fully ===
         split_policy.left.model.load_state_dict(connect_policy.model.state_dict())
-        split_policy.right.model.load_state_dict(connect_policy.model.state_dict())
-    
-        # Split mean and std heads
-        with torch.no_grad():
-            # Mean head
-            split_policy.left.mean_head.weight.copy_(connect_policy.mean_head.weight[:split_policy.left.mean_head.out_features])
-            split_policy.left.mean_head.bias.copy_(connect_policy.mean_head.bias[:split_policy.left.mean_head.out_features])
-    
-            split_policy.right.mean_head.weight.copy_(connect_policy.mean_head.weight[split_policy.left.mean_head.out_features:])
-            split_policy.right.mean_head.bias.copy_(connect_policy.mean_head.bias[split_policy.left.mean_head.out_features:])
-    
-            # Log std head
-            split_policy.left.log_std_head.weight.copy_(connect_policy.log_std_head.weight[:split_policy.left.log_std_head.out_features])
-            split_policy.left.log_std_head.bias.copy_(connect_policy.log_std_head.bias[:split_policy.left.log_std_head.out_features])
-    
-            split_policy.right.log_std_head.weight.copy_(connect_policy.log_std_head.weight[split_policy.left.log_std_head.out_features:])
-            split_policy.right.log_std_head.bias.copy_(connect_policy.log_std_head.bias[split_policy.left.log_std_head.out_features:])
+
+        # === Copy obs-only parts to right model ===
+        for (right_layer, connect_layer) in zip(split_policy.right.model, connect_policy.model):
+            # Only modify Linear layers
+            if isinstance(connect_layer, nn.Linear):
+                if connect_layer.in_features == obs_dim + latent_dim:
+                    right_layer.weight.copy_(connect_layer.weight[:, :obs_dim])
+                    right_layer.bias.copy_(connect_layer.bias)
+                elif connect_layer.in_features == obs_dim:
+                    right_layer.weight.copy_(connect_layer.weight)
+                    right_layer.bias.copy_(connect_layer.bias)
+                elif connect_layer.in_features == right_layer.in_features:
+                    # Intermediate layer with same input dim (e.g. 128)
+                    right_layer.weight.copy_(connect_layer.weight)
+                    right_layer.bias.copy_(connect_layer.bias)
+                else:
+                    print(f"[WARNING] Unexpected layer size in connect_policy: {connect_layer}")
+            elif isinstance(connect_layer, (nn.LayerNorm, nn.ReLU, nn.LeakyReLU)):
+                # Safe to copy these layer types directly
+                if hasattr(right_layer, 'weight'):
+                    right_layer.weight.copy_(connect_layer.weight)
+                if hasattr(right_layer, 'bias'):
+                    right_layer.bias.copy_(connect_layer.bias)
+
+        # === Split output heads (mean/log_std) ===
+        lh, rh = split_policy.left, split_policy.right
+        cp = connect_policy
+
+        lh.mean_head.weight.copy_(cp.mean_head.weight[:lh.mean_head.out_features])
+        lh.mean_head.bias.copy_(cp.mean_head.bias[:lh.mean_head.out_features])
+        rh.mean_head.weight.copy_(cp.mean_head.weight[lh.mean_head.out_features:])
+        rh.mean_head.bias.copy_(cp.mean_head.bias[lh.mean_head.out_features:])
+
+        lh.log_std_head.weight.copy_(cp.log_std_head.weight[:lh.log_std_head.out_features])
+        lh.log_std_head.bias.copy_(cp.log_std_head.bias[:lh.log_std_head.out_features])
+        rh.log_std_head.weight.copy_(cp.log_std_head.weight[lh.log_std_head.out_features:])
+        rh.log_std_head.bias.copy_(cp.log_std_head.bias[lh.log_std_head.out_features:])
+
+    return split_policy
+
+def LoadAblate(obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256)):
+    connect_policy = ConnectPolicy(obs_dim=obs_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, action_dim=action_dim, hidden_dims=hidden_dims)
+    connect_policy.load_weights()
+
+    split_policy = SplitPolicy(obs_dim=obs_dim, latent_dim=CONFIG.GENGHIS_CTRL_DIM, action_dim=action_dim, hidden_dims=hidden_dims)
+    split_policy = split_weights(connect_policy, split_policy)
+
+    return split_policy
 
 class CommPolicy(nn.Module):
     def __init__(self, obs_dim, latent_dim, action_dim, hidden_dims=(256, 256, 256), activation=nn.LeakyReLU):

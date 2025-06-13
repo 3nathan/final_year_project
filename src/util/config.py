@@ -23,6 +23,7 @@ class Config():
         self.EPSILON = 0.2
         self.SAVE_INTERVAL = 10
         self.Z_UPDATES = 3
+        self.HIDDEN_DIMS = (128, 128)
 
         # Machine configs
         self.USING_MAC = platform.system() == "Darwin"

@@ -6,7 +6,8 @@ accepted_strings = {
         'connect', 
         'split',
         'comm', 
-        'encode'
+        'encode',
+        'ablate'
     ),
 
     'algorithms': (

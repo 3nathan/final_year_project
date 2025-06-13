@@ -13,6 +13,7 @@ from learning.models_copy import ConnectPolicy
 from learning.models_copy import SplitPolicy
 from learning.models_copy import CommPolicy
 from learning.models_copy import EncodePolicy
+from learning.models_copy import LoadAblate
 # from learning.training import ReinforcementLearning
 from learning.training_copy import ReinforcementLearning
 
@@ -34,6 +35,8 @@ def main():
             policy = CommPolicy
         elif args.neural_network == 'encode':
             policy = EncodePolicy
+        elif args.neural_network == 'ablate':
+            policy = LoadAblate
         else:
             policy = ConnectPolicy
 
