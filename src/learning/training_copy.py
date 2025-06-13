@@ -150,6 +150,7 @@ class ReinforcementLearning():
 
             if self.save and total_reward > max_reward:
                 self.policy.save_weights()
+                max_reward = total_reward
 
             if trajectory % 10 == 0 and self.video:
                 self.env.run_demo(policy=self.policy)

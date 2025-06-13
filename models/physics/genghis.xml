@@ -9,7 +9,7 @@
         <light name="top" pos="0 0 4"/>
         <camera name="plan" pos="0 0 40" quat="1 0 0 0" fovy="10"/>
         <camera name="zoom_plan" pos="0 0 40" quat="1 0 0 0" fovy="5"/>
-        <camera name="side" pos="4 0 1" quat="1 1 1 1"/>
+        <camera name="side" pos="4 0 0.5" quat="1 1 1 1"/>
 
         <body name="plain">
             <geom name="ground" type="plane" size="0 0 0.1" rgba="0.00 0.91 0.14 1" friction="1.0 0.1 0.0" contype="1" conaffinity="1"/>

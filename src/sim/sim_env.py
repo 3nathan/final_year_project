@@ -225,8 +225,11 @@ class SimEnv():
                 action = dist.sample()
 
             else:
-                action = torch.as_tensor([0.1,0.1,0.1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5])
-                # action = torch.as_tensor([0,0,0,0,0,0,0,0,0,0,0,0])
+                # action = torch.as_tensor([0.1,0.1,0.1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5])
+                action = torch.as_tensor([0.5,0.5,0.5,
+                                          0.5,0.5,0.5,
+                                          0.5,0.5,0.5,
+                                          0.5,0.5,0.5])
                 # action = torch.as_tensor([])
                 # action = torch.as_tensor([
                     # 0.5, 0.5, 0.5, 0.5,
@@ -247,8 +250,8 @@ class SimEnv():
                 obs, reward, done, _ = self.step(action)
 
             if self._display_next_frame(prev_frame_draw, t=t):
-                # self.renderer.update_scene(self.data, camera="side")
-                self.renderer.update_scene(self.data)
+                self.renderer.update_scene(self.data, camera="side")
+                # self.renderer.update_scene(self.data)
                 img = self.renderer.render()
 
                 self.display.draw_img(img)
@@ -257,8 +260,8 @@ class SimEnv():
 
             self.display.handle_close()
             
-            if self.data.time > 3:
-                self.display.quit()
+            # if self.data.time > 3:
+            #     self.display.quit()
 
     def _display_next_frame(self, prev_frame, t=1/60):
         return time.time() >= prev_frame + t

@@ -44,7 +44,7 @@ def main():
         env = SimEnv(str(args.model), video=True)
 
         print("Demoing simulation")
-        env.run_demo(policy=policy)
+        env.run_demo()
 
 if __name__ == '__main__':
     main()
